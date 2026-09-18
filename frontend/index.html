@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1a5c3a" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="ELYON YIREH" />
+    <title>Academic Pulse</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            boxShadow: {
+              glow: '0 0 0 1px rgba(148,163,184,.14), 0 18px 55px rgba(15,23,42,.45)'
+            },
+            colors: {
+              slatebg: '#0b1220',
+              panel: '#111827',
+              panel2: '#161f2d',
+              accent: '#06b6d4',
+              accent2: '#6366f1'
+            }
+          }
+        }
+      };
+    </script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+      :root {
+        --bg-1: #0b1220;
+        --bg-2: #111827;
+        --surface: rgba(17, 24, 39, 0.7);
+        --surface-strong: rgba(15, 23, 42, 0.88);
+        --stroke: rgba(148, 163, 184, 0.18);
+        --text: #f4f7fb;
+        --muted: #9aa8c3;
+        --accent: #06b6d4;
+        --accent-2: #6366f1;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background:
+          radial-gradient(circle at top left, rgba(6, 182, 212, 0.14), transparent 28%),
+          radial-gradient(circle at bottom right, rgba(99, 102, 241, 0.14), transparent 32%),
+          linear-gradient(135deg, var(--bg-1), var(--bg-2));
+        color: var(--text);
+        font-family: 'Inter', sans-serif;
+      }
+
+      .glass {
+        background: rgba(17, 24, 39, 0.7);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid var(--stroke);
+        box-shadow: 0 20px 60px rgba(2, 6, 23, 0.4);
+      }
+
+      .tab-btn {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .tab-btn.active {
+        background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(99, 102, 241, 0.18));
+        border-color: rgba(6, 182, 212, 0.4);
+      }
+
+      .schedule-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .day-column {
+        min-height: 380px;
+      }
+
+      .class-block {
+        cursor: pointer;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+      }
+
+      .class-block:hover {
+        transform: translateY(-2px);
+      }
+
+      body {
+        background: #f1f5f9;
+        border-top: 4px solid #087443;
+        color: #17233d;
+      }
+
+      .glass {
+        background: rgba(255, 255, 255, 0.92);
+        border-color: #dfe6f0;
+        box-shadow: 0 8px 24px rgba(37, 55, 87, 0.06);
+      }
+
+      .semester-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .today-pill {
+        color: #1260e8;
+        background: #edf4ff;
+        border: 1px solid #cfe0ff;
+      }
+
+      .week-day {
+        display: flex;
+        min-height: 72px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        border: 1px solid #dfe6f0;
+        border-radius: 18px;
+        background: #fff;
+        color: #8493ab;
+      }
+
+      .week-day span {
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .week-day strong {
+        color: #243653;
+        font-size: 20px;
+      }
+
+      .week-day.active {
+        border-color: #3d7ff0;
+        background: #2167e8;
+        box-shadow: 0 5px 12px rgba(33, 103, 232, 0.28);
+        color: #fff;
+      }
+
+      .week-day.active strong {
+        color: #fff;
+      }
+
+      .search-box {
+        order: 3;
+        width: 100%;
+      }
+
+      .notification-button {
+        margin-left: auto;
+      }
+
+      .bottom-nav-item {
+        display: flex;
+        min-width: 68px;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        color: #687994;
+        font-size: 11px;
+      }
+
+      .bottom-nav-item.active {
+        color: #1260e8;
+        font-weight: 700;
+      }
+
+      .brand-mark { display: flex; align-items: center; min-width: 188px; }
+      .brand-icon { width: 42px; height: 42px; flex: 0 0 42px; object-fit: contain; }
+      .brand-name { font-size: 20px; font-weight: 800; line-height: .9; letter-spacing: 0; }
+      .brand-name span { display: block; color: #087443; }
+      .simple-search { min-height: 76px; border: 2px solid #cfe0ff; box-shadow: 0 12px 30px rgba(37, 99, 235, .08); }
+      .simple-search input { font-size: 16px; }
+      .simple-search button { display: flex; height: 42px; width: 42px; align-items: center; justify-content: center; border-radius: 13px; background: #2167e8; color: #fff; }
+      .simple-search-help { margin-top: 10px; color: #71829c; font-size: 12px; text-align: center; }
+      .simple-only { display: none; }
+
+      .reference-search { max-width: 660px; margin: 0 auto; }
+      .reference-field { min-height: 58px; border: 1px solid #d1d9e2; background: #fff; }
+      .reference-field:focus-within { border-color: #087443; box-shadow: 0 0 0 3px rgba(8, 116, 67, .1); }
+      .reference-field label { display: block; color: #4b5563; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+      .reference-field input, .reference-field select { width: 100%; background: transparent; color: #17233d; font-size: 14px; outline: none; }
+      .reference-field input::placeholder { color: #6b7280; opacity: 1; }
+      .reference-search-button { min-height: 58px; background: #06663d; box-shadow: 0 7px 14px rgba(6, 102, 61, .2); }
+      .reference-results { max-width: 660px; margin: 0 auto; }
+
+      .field-label {
+        display: block;
+        margin-bottom: 5px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .field-input {
+        width: 100%;
+        border: 1px solid #dbe3ef;
+        border-radius: 10px;
+        background: #fff;
+        color: #17233d;
+        padding: 9px 10px;
+        font-size: 13px;
+        outline: none;
+      }
+
+      .field-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+      }
+
+      @media (min-width: 1024px) {
+        .search-box {
+          order: initial;
+          width: auto;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .legacy-tabs {
+          display: none;
+        }
+
+        #tarjetasView {
+          padding-bottom: 76px;
+        }
+
+        .schedule-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .skeleton {
+        position: relative;
+        overflow: hidden;
+        background: rgba(148, 163, 184, 0.08);
+      }
+
+      .skeleton::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+        animation: shimmer 1.5s infinite;
+      }
+
+      @keyframes shimmer {
+        100% {
+          transform: translateX(100%);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .schedule-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen antialiased">
+    <div class="mx-auto max-w-[660px] px-4 py-6 md:px-6">
+      <header class="glass mb-4 rounded-3xl px-4 py-4 md:px-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div class="brand-mark">
+            <img class="brand-icon mr-3" src="./assets/elyon-yireh.png" alt="Mascota Elyon Yireh" />
+            <div>
+              <p class="brand-name">ELYON <span>YIREH</span></p>
+              <h1 class="text-[11px] text-slate-500">Tu proyecto de Universidad</h1>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="adminButton" class="notification-button flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm" aria-label="Administración">
+              <i class="ph ph-lock-key-open text-lg"></i>
+            </button>
+          </div>
+
+          <div class="search-box hidden"></div>
+        </div>
+      </header>
+
+      <section class="reference-search glass rounded-3xl p-5 md:p-7">
+        <div class="mb-4 flex items-center justify-between border-b border-slate-200 pb-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-blue-600"><i class="ph ph-magnifying-glass"></i></div>
+            <h2 class="text-2xl font-bold text-slate-900">Buscador</h2>
+          </div>
+          <button id="clearSearch" class="font-semibold text-blue-600">Limpiar</button>
+        </div>
+        <div class="space-y-4">
+          <div class="reference-field rounded-2xl px-4 py-3">
+            <label for="searchInput">Profesor o consulta</label>
+            <input id="searchInput" type="text" placeholder="Ej. docente, salón o semestre" />
+          </div>
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="reference-field rounded-2xl px-4 py-3">
+              <label for="programSearch">Programa</label>
+              <input id="programSearch" type="text" placeholder="Ej. Sistemas, Enfermería..." />
+            </div>
+            <div class="reference-field rounded-2xl px-4 py-3">
+              <label for="timeSearch">Horario</label>
+              <input id="timeSearch" type="text" placeholder="Ej. 6:30 AM - 8:45 AM" />
+            </div>
+          </div>
+          <div class="reference-field rounded-2xl px-4 py-3">
+            <label for="dateSearch">Fecha o periodo</label>
+            <input id="dateSearch" type="text" placeholder="Ej. 07 de septiembre o 15 al 24 de septiembre" />
+          </div>
+          <button id="searchButton" class="reference-search-button flex w-full items-center justify-center gap-3 rounded-2xl text-lg font-bold text-white"><i class="ph ph-magnifying-glass"></i> Buscar</button>
+        </div>
+      </section>
+
+      <section class="glass semester-banner simple-only mb-6 rounded-2xl px-4 py-4">
+        <div class="flex items-center gap-3">
+          <i class="ph ph-graduation-cap text-2xl text-blue-600"></i>
+          <div>
+            <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400">Periodo académico</p>
+            <h2 class="text-base font-semibold text-slate-900">Semestre y programas disponibles</h2>
+          </div>
+        </div>
+        <i class="ph ph-caret-down text-slate-500"></i>
+      </section>
+
+      <section class="simple-only mb-6">
+        <div class="mb-3 flex items-center justify-between">
+          <h2 class="text-lg font-bold text-slate-900">Semana académica</h2>
+          <span class="today-pill rounded-full px-3 py-1.5 text-xs font-semibold">Hoy</span>
+        </div>
+        <div class="week-strip grid grid-cols-6 gap-2">
+          <div class="week-day"><span>LUN</span><strong>24</strong></div>
+          <div class="week-day"><span>MAR</span><strong>25</strong></div>
+          <div class="week-day active"><span>MIÉ</span><strong>26</strong></div>
+          <div class="week-day"><span>JUE</span><strong>27</strong></div>
+          <div class="week-day"><span>VIE</span><strong>28</strong></div>
+          <div class="week-day"><span>SÁB</span><strong>01</strong></div>
+        </div>
+      </section>
+
+      <main>
+        <section id="tarjetasView" class="view-panel">
+          <div class="reference-results mt-8"><div class="mb-4 flex items-center justify-between"><h2 class="text-2xl font-bold text-slate-900">Resultados</h2><span id="resultCount" class="text-slate-500"></span></div><div id="cardsContainer" class="grid gap-5"></div></div>
+        </section>
+
+        <section id="horarioView" class="view-panel hidden">
+          <div class="glass rounded-3xl p-4 md:p-6">
+            <div class="mb-4 flex items-center justify-between">
+              <div>
+                <p class="text-[10px] uppercase tracking-[0.24em] text-slate-400">Miércoles 26 de febrero</p>
+                <h3 class="text-xl font-semibold text-slate-900">Clases de hoy</h3>
+              </div>
+              <button id="myScheduleBtn" class="rounded-full border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-500/20">
+                Ver mi horario completo
+              </button>
+            </div>
+            <div id="calendarContainer" class="schedule-grid"></div>
+          </div>
+        </section>
+
+        <section id="profesoresView" class="view-panel hidden">
+          <div id="teachersContainer" class="grid gap-5 md:grid-cols-2 xl:grid-cols-3"></div>
+        </section>
+      </main>
+    </div>
+
+    <section id="adminPanel" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-950/50 p-4 backdrop-blur-sm">
+      <div class="mx-auto mt-6 max-w-6xl rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl md:p-7">
+        <div class="mb-6 flex items-center justify-between">
+          <div>
+            <p class="text-[10px] uppercase tracking-[0.22em] text-slate-400">Panel protegido</p>
+            <h2 class="text-2xl font-bold text-slate-900">Administrar horarios</h2>
+          </div>
+          <button id="closeAdmin" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700"><i class="ph ph-x"></i></button>
+        </div>
+        <div id="adminLogin" class="mx-auto max-w-md rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <p class="mb-4 text-sm text-slate-500">Ingresa con tu usuario de administrador para editar la programación.</p>
+          <div class="space-y-3">
+            <input id="adminUsername" value="admin" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none" placeholder="Usuario" />
+            <input id="adminPassword" type="password" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none" placeholder="Contraseña" />
+            <button id="adminLoginButton" class="w-full rounded-xl bg-blue-600 px-4 py-2.5 font-semibold text-white hover:bg-blue-700">Entrar</button>
+            <p id="adminLoginMessage" class="text-sm text-rose-600"></p>
+          </div>
+        </div>
+        <div id="adminEditor" class="hidden">
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm text-slate-500">Edita el registro y guarda los cambios. Se reflejarán en la consulta estudiantil.</p>
+            <div class="flex gap-2">
+              <button id="createScheduleButton" class="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white">+ Nuevo horario</button>
+              <button id="adminLogout" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700">Cerrar sesión</button>
+            </div>
+          </div>
+          <form id="createScheduleForm" class="mb-5 hidden grid gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 md:grid-cols-6">
+            <input name="carrera" class="field-input md:col-span-2" placeholder="Programa" required />
+            <input name="semestre" class="field-input" placeholder="Semestre" required />
+            <input name="fecha" class="field-input md:col-span-2" placeholder="Fecha o periodo" required />
+            <select name="materiaId" id="newSubject" class="field-input" required></select>
+            <select name="profesorId" id="newTeacher" class="field-input md:col-span-2" required></select>
+            <select name="salonId" id="newRoom" class="field-input" required></select>
+            <input name="horaInicio" class="field-input" value="06:30" placeholder="Desde" required />
+            <input name="horaFin" class="field-input" value="08:45" placeholder="Hasta" required />
+            <select name="modalidad" class="field-input" required><option>Presencial</option><option>Intensiva</option><option>Virtual</option></select>
+            <button class="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white md:col-span-2">Crear horario</button>
+            <p id="createScheduleMessage" class="text-sm md:col-span-6"></p>
+          </form>
+          <div id="adminRows" class="space-y-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+      <div class="w-full max-w-xl rounded-[28px] border border-slate-200 bg-white p-5 shadow-2xl md:p-6">
+        <div class="mb-5 flex items-center justify-between">
+          <div>
+            <p class="text-[10px] uppercase tracking-[0.22em] text-slate-400">Detalle</p>
+            <h3 id="modalTitle" class="text-xl font-semibold text-slate-900">Detalle de la clase</h3>
+          </div>
+          <button id="closeModal" class="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-700 hover:border-slate-500">
+            <i class="ph ph-x"></i>
+          </button>
+        </div>
+        <div id="modalContent" class="space-y-4"></div>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js').catch((error) => {
+            console.error('No se pudo registrar el Service Worker:', error);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
