@@ -1,4 +1,5 @@
-﻿const dayOrder = ['Corte 5'];
+﻿const API_BASE_URL = ''; // Vacío = usa rutas relativas. En producción pondremos la URL del backend en Render.
+const dayOrder = ['Corte 5'];
 
 const state = {
   allSchedule: [],
@@ -39,20 +40,35 @@ const resultCount = document.getElementById('resultCount');
 let adminToken = sessionStorage.getItem('academic_admin_token') || '';
 
 async function fetchJson(url) {
-  const response = await fetch(url);
-  const data = await response.json();
+  try {
+    const response = await fetch(url);
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Error de carga');
+    if (!response.ok) {
+      const contentType = response.headers.get('content-type') || '';
+      const message = contentType.includes('application/json')
+        ? (await response.json()).message
+        : `Error HTTP ${response.status}`;
+
+      throw new Error(message || 'Error de carga');
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+
+    if (!contentType.includes('application/json')) {
+      throw new Error('El servidor no devolvió una respuesta JSON válida');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`Error consultando ${url}:`, error);
+    throw error;
   }
-
-  return data;
 }
 
 async function loadData() {
   const [scheduleRes, teachersRes] = await Promise.all([
-    fetchJson('/api/v1/horarios'),
-    fetchJson('/api/v1/profesores')
+    fetchJson(`${API_BASE_URL}/api/v1/horarios`),
+    fetchJson(`${API_BASE_URL}/api/v1/profesores`)
   ]);
 
   state.allSchedule = scheduleRes.data || [];
@@ -368,9 +384,9 @@ async function adminLoginRequest() {
 async function loadAdminEditor() {
   const [scheduleRes, teachersRes, roomsRes, subjectsRes] = await Promise.all([
     fetch('/api/v1/admin/horarios', { headers: adminHeaders() }).then((response) => response.json()),
-    fetchJson('/api/v1/profesores'),
-    fetchJson('/api/v1/salones'),
-    fetchJson('/api/v1/materias')
+    fetchJson(`${API_BASE_URL}/api/v1/profesores`),
+    fetchJson(`${API_BASE_URL}/api/v1/salones`),
+    fetchJson(`${API_BASE_URL}/api/v1/materias`)
   ]);
 
   if (!scheduleRes.success) throw new Error(scheduleRes.message || 'No se pudo cargar el panel');

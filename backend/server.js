@@ -4,12 +4,12 @@ const cors = require('cors');
 const { profesores, materias, salones, estudiantes, horarios } = require('./data');
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 3000;
 const ADMIN_USER = 'admin';
 const ADMIN_PASSWORD = 'Admin2026*';
 const ADMIN_TOKEN = 'academic-pulse-admin-token';
 
-app.use(cors());
+app.use(cors({ origin: 'https://elyon-yireh-dczd449bo-diego-ortega1.vercel.app' }));
 app.use(express.json());
 
 const frontendPath = path.join(__dirname, '../frontend');
