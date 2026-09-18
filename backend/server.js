@@ -8,8 +8,18 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_USER = 'admin';
 const ADMIN_PASSWORD = 'Admin2026*';
 const ADMIN_TOKEN = 'academic-pulse-admin-token';
+const allowedOrigins = new Set([
+  'https://elyon-yireh-app.vercel.app',
+  'https://elyon-yireh-dczd449bo-diego-ortega1.vercel.app',
+  'https://elyon-yireh-o4mdbt4on-diego-ortega1.vercel.app'
+]);
 
-app.use(cors({ origin: 'https://elyon-yireh-dczd449bo-diego-ortega1.vercel.app' }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error('Origen no permitido por CORS'));
+  }
+}));
 app.use(express.json());
 
 const frontendPath = path.join(__dirname, '../frontend');
