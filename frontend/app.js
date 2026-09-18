@@ -1,4 +1,4 @@
-﻿const API_BASE_URL = ''; // Vacío = usa rutas relativas. En producción pondremos la URL del backend en Render.
+﻿const API_BASE_URL = 'https://elyon-yireh-production.up.railway.app';
 const dayOrder = ['Corte 5'];
 
 const state = {
