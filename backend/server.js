@@ -1,5 +1,4 @@
 const express = require('express');
-const path = require('path');
 const cors = require('cors');
 const { profesores, materias, salones, estudiantes, horarios } = require('./data');
 
@@ -21,9 +20,6 @@ app.use(cors({
   }
 }));
 app.use(express.json());
-
-const frontendPath = path.join(__dirname, '../frontend');
-app.use(express.static(frontendPath));
 
 function normalizeText(value) {
   return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -61,7 +57,7 @@ function hydrateSchedule(item) {
 }
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
+  res.json({ status: 'ok', service: 'academic-schedule-api' });
 });
 
 app.get('/api/v1/health', (req, res) => {
