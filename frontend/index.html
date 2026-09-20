@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -48,7 +48,7 @@
           </div>
 
           <div class="flex items-center gap-2">
-            <button id="adminButton" class="notification-button flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm" aria-label="AdministraciÃ³n">
+            <button id="adminButton" class="notification-button flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm" aria-label="Administración">
               <i class="ph ph-lock-key-open text-lg"></i>
             </button>
           </div>
@@ -68,12 +68,12 @@
         <div class="space-y-4">
           <div class="reference-field rounded-2xl px-4 py-3">
             <label for="searchInput">Profesor o consulta</label>
-            <input id="searchInput" type="text" placeholder="Ej. docente, salÃ³n o semestre" />
+            <input id="searchInput" type="text" placeholder="Ej. docente, salón o semestre" />
           </div>
           <div class="grid gap-4 md:grid-cols-2">
             <div class="reference-field rounded-2xl px-4 py-3">
               <label for="programSearch">Programa</label>
-              <input id="programSearch" type="text" placeholder="Ej. Sistemas, EnfermerÃ­a..." />
+              <input id="programSearch" type="text" placeholder="Ej. Sistemas, Enfermería..." />
             </div>
             <div class="reference-field rounded-2xl px-4 py-3">
               <label for="timeSearch">Horario</label>
@@ -92,7 +92,7 @@
         <div class="flex items-center gap-3">
           <i class="ph ph-graduation-cap text-2xl text-blue-600"></i>
           <div>
-            <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400">Periodo acadÃ©mico</p>
+            <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400">Periodo académico</p>
             <h2 class="text-base font-semibold text-slate-900">Semestre y programas disponibles</h2>
           </div>
         </div>
@@ -101,16 +101,16 @@
 
       <section class="simple-only mb-6">
         <div class="mb-3 flex items-center justify-between">
-          <h2 class="text-lg font-bold text-slate-900">Semana acadÃ©mica</h2>
+          <h2 class="text-lg font-bold text-slate-900">Semana académica</h2>
           <span class="today-pill rounded-full px-3 py-1.5 text-xs font-semibold">Hoy</span>
         </div>
         <div class="week-strip grid grid-cols-6 gap-2">
           <div class="week-day"><span>LUN</span><strong>24</strong></div>
           <div class="week-day"><span>MAR</span><strong>25</strong></div>
-          <div class="week-day active"><span>MIÃ‰</span><strong>26</strong></div>
+          <div class="week-day active"><span>MIÉ</span><strong>26</strong></div>
           <div class="week-day"><span>JUE</span><strong>27</strong></div>
           <div class="week-day"><span>VIE</span><strong>28</strong></div>
-          <div class="week-day"><span>SÃB</span><strong>01</strong></div>
+          <div class="week-day"><span>SÁB</span><strong>01</strong></div>
         </div>
       </section>
 
@@ -123,7 +123,7 @@
           <div class="glass rounded-3xl p-4 md:p-6">
             <div class="mb-4 flex items-center justify-between">
               <div>
-                <p class="text-[10px] uppercase tracking-[0.24em] text-slate-400">MiÃ©rcoles 26 de febrero</p>
+                <p class="text-[10px] uppercase tracking-[0.24em] text-slate-400">Miércoles 26 de febrero</p>
                 <h3 class="text-xl font-semibold text-slate-900">Clases de hoy</h3>
               </div>
               <button id="myScheduleBtn" class="rounded-full border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-500/20">
@@ -150,20 +150,20 @@
           <button id="closeAdmin" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700"><i class="ph ph-x"></i></button>
         </div>
         <div id="adminLogin" class="mx-auto max-w-md rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <p class="mb-4 text-sm text-slate-500">Ingresa con tu usuario de administrador para editar la programaciÃ³n.</p>
+          <p class="mb-4 text-sm text-slate-500">Ingresa con tu usuario de administrador para editar la programación.</p>
           <div class="space-y-3">
             <input id="adminUsername" value="admin" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none" placeholder="Usuario" />
-            <input id="adminPassword" type="password" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none" placeholder="ContraseÃ±a" />
+            <input id="adminPassword" type="password" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none" placeholder="Contraseña" />
             <button id="adminLoginButton" class="w-full rounded-xl bg-blue-600 px-4 py-2.5 font-semibold text-white hover:bg-blue-700">Entrar</button>
             <p id="adminLoginMessage" class="text-sm text-rose-600"></p>
           </div>
         </div>
         <div id="adminEditor" class="hidden">
           <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <p class="text-sm text-slate-500">Edita el registro y guarda los cambios. Se reflejarÃ¡n en la consulta estudiantil.</p>
+            <p class="text-sm text-slate-500">Edita el registro y guarda los cambios. Se reflejarán en la consulta estudiantil.</p>
             <div class="flex gap-2">
               <button id="createScheduleButton" class="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white">+ Nuevo horario</button>
-              <button id="adminLogout" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700">Cerrar sesiÃ³n</button>
+              <button id="adminLogout" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700">Cerrar sesión</button>
             </div>
           </div>
           <form id="createScheduleForm" class="mb-5 hidden grid gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 md:grid-cols-6">
