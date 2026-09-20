@@ -36,6 +36,12 @@ button,
 input,
 select {
   font: inherit;
+  border: 0;
+}
+
+button {
+  cursor: pointer;
+  background: transparent;
 }
 
 .view-panel.hidden {
