@@ -23,6 +23,7 @@ const configuredOrigins = process.env.CLIENT_ORIGIN || [
 const allowedOrigins = new Set(configuredOrigins.split(',').map((origin) => origin.trim()).filter(Boolean));
 const SCHEDULE_CACHE_TTL = 5 * 60 * 1000;
 const scheduleCache = new Map();
+let lastScheduleUpdate = new Date().toISOString();
 
 app.use(helmet());
 app.use(compression());
@@ -33,7 +34,7 @@ app.use(cors({
   }
 }));
 app.use(express.json());
-app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: 'draft-7', legacyHeaders: false }));
+app.use(rateLimit({ windowMs: 60 * 1000, limit: 100, standardHeaders: 'draft-7', legacyHeaders: false }));
 const loginRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, message: { success: false, message: 'Demasiados intentos de inicio de sesión' } });
 
 function normalizeText(value) {
@@ -65,6 +66,73 @@ function getUniquePrograms() {
 
 function clearScheduleCache() {
   scheduleCache.clear();
+}
+
+function touchScheduleUpdate() {
+  lastScheduleUpdate = new Date().toISOString();
+  clearScheduleCache();
+}
+
+function scheduleMatchesQuestion(item, question) {
+  const haystack = normalizeText([
+    item.carrera,
+    item.materia?.nombre,
+    item.materia?.programa,
+    item.profesor?.nombre,
+    item.salon?.nombre,
+    item.dia,
+    item.fecha,
+    item.horaInicio,
+    item.horaFin
+  ].join(' '));
+  return normalizeText(question).split(/\s+/).filter(Boolean).some((term) => term.length > 2 && haystack.includes(term));
+}
+
+function formatChatSchedule(item) {
+  return `${item.materia?.nombre || 'Materia'}: ${item.horaInicio} - ${item.horaFin}, ${item.salon?.nombre || 'aula por asignar'} (${item.carrera || item.materia?.programa || 'programa'})`;
+}
+
+function parseTimeToMinutes(value) {
+  const match = String(value || '').trim().match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!match) return null;
+  let hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const meridiem = match[3]?.toUpperCase();
+  if (meridiem === 'PM' && hour < 12) hour += 12;
+  if (meridiem === 'AM' && hour === 12) hour = 0;
+  return hour * 60 + minute;
+}
+
+function getGraphStatistics() {
+  const professorPrograms = new Map();
+  const dayDistribution = new Map();
+  const teacherLoad = new Map();
+
+  horarios.forEach((item) => {
+    const professor = getProfesorById(item.profesorId);
+    const subject = getMateriaById(item.materiaId);
+    const program = item.carrera || subject?.programa || 'Sin programa';
+    const day = item.dia || 'Sin día';
+    professorPrograms.set(program, (professorPrograms.get(program) || new Set()));
+    professorPrograms.get(program).add(professor?.id || item.profesorId || 'sin-docente');
+    dayDistribution.set(day, (dayDistribution.get(day) || 0) + 1);
+    const start = parseTimeToMinutes(item.horaInicio);
+    const end = parseTimeToMinutes(item.horaFin);
+    const duration = start !== null && end !== null && end >= start ? end - start : 0;
+    const teacherName = professor?.nombre || 'Docente por asignar';
+    teacherLoad.set(teacherName, (teacherLoad.get(teacherName) || 0) + duration / 60);
+  });
+
+  return {
+    profesoresPorPrograma: [...professorPrograms.entries()]
+      .map(([programa, ids]) => ({ programa, cantidad: ids.size }))
+      .sort((a, b) => b.cantidad - a.cantidad),
+    horariosPorDia: [...dayDistribution.entries()].map(([dia, cantidad]) => ({ dia, cantidad })),
+    cargaPorDocente: [...teacherLoad.entries()]
+      .map(([docente, horas]) => ({ docente, horas: Number(horas.toFixed(2)) }))
+      .sort((a, b) => b.horas - a.horas)
+      .slice(0, 10)
+  };
 }
 
 function scheduleCacheMiddleware(req, res, next) {
@@ -138,6 +206,39 @@ app.get('/api/v1/programas', (req, res) => {
   return res.json(getUniquePrograms());
 });
 
+app.get('/api/v1/ultima-actualizacion', (req, res) => {
+  return res.json({ timestamp: lastScheduleUpdate });
+});
+
+app.get('/api/v1/estadisticas-graficos', (req, res) => {
+  return res.json(getGraphStatistics());
+});
+
+app.post('/api/v1/chat', (req, res) => {
+  const pregunta = String(req.body?.pregunta || '').trim();
+  if (!pregunta || pregunta.length > 160) {
+    return res.status(400).json({ success: false, message: 'Escribe una pregunta breve para continuar.' });
+  }
+
+  const normalizedQuestion = normalizeText(pregunta);
+  const isScheduleQuestion = /(hora|horario|clase|clases|ense|programa|aula|salon|dia|sabado|lunes|martes|miercoles|jueves|viernes|corte)/.test(normalizedQuestion);
+  if (!isScheduleQuestion) {
+    return res.json({ success: true, respuesta: "Lo siento, no entiendo la pregunta. Intenta con: '¿A qué hora enseña X?' o '¿Qué clases hay el sábado?'" });
+  }
+
+  const matches = horarios.map(hydrateSchedule).filter((item) => scheduleMatchesQuestion(item, pregunta));
+  if (!matches.length) {
+    return res.json({ success: true, respuesta: 'No encontré horarios relacionados con esa pregunta. Prueba con el nombre de un profesor, programa, aula o día.' });
+  }
+
+  const limitedMatches = matches.slice(0, 8);
+  return res.json({
+    success: true,
+    respuesta: `Encontré ${matches.length} horario${matches.length === 1 ? '' : 's'} relacionado${matches.length === 1 ? '' : 's'}:`,
+    horarios: limitedMatches.map(formatChatSchedule)
+  });
+});
+
 app.post('/api/v1/admin/login', loginRateLimit, (req, res) => {
   const { username, password } = req.body || {};
 
@@ -181,7 +282,7 @@ app.post('/api/v1/admin/horarios', requireAdmin, async (req, res, next) => {
   };
 
   horarios.push(schedule);
-  clearScheduleCache();
+  touchScheduleUpdate();
   await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
   return res.status(201).json({ success: true, data: hydrateSchedule(schedule) });
 });
@@ -198,7 +299,7 @@ app.patch('/api/v1/admin/horarios/:id', requireAdmin, async (req, res, next) => 
     if (Object.prototype.hasOwnProperty.call(req.body, field)) schedule[field] = req.body[field];
   });
 
-  clearScheduleCache();
+  touchScheduleUpdate();
   await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
   return res.json({ success: true, data: hydrateSchedule(schedule) });
 });
@@ -209,7 +310,7 @@ app.delete('/api/v1/admin/horarios/:id', requireAdmin, async (req, res, next) =>
   if (scheduleIndex === -1) return res.status(404).json({ success: false, message: 'Horario no encontrado' });
 
   horarios.splice(scheduleIndex, 1);
-  clearScheduleCache();
+  touchScheduleUpdate();
   await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
   return res.json({ success: true, message: 'Horario eliminado' });
 });
