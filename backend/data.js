@@ -244,6 +244,39 @@ const filasNuevas = [
   ['104', 'Ingles Tecnico Niveles', 'NIVEL 1', 'COMBI SEM', 'JEISON YEPES']
 ];
 
+const filasCorte5 = [
+  ['604', 'CLINICA VETERINARIA', 'E-AFANPRIMEROS AUXILIOS VETERINARIOS', '1 SEM', 'JENNIFER DEL VALLE RANDIAL', '1:45 PM', '4:00 PM'],
+  ['604', 'CLINICA VETERINARIA', 'E-PARACIPARACITOLOGIA', '2 SEM', 'JENNIFER DEL VALLE RANDIAL', '11:30 AM', '1:30 PM'],
+  ['3A', 'ENFERMERIA', 'E-OUNOSORIENTAR AL USUARIO EN LAS NORMAS DE SALUD', '1 SEM', '', '9:00 AM', '11:15 AM'],
+  ['104', 'ENFERMERIA', 'E-CONIUECONTROLAR LAS INFECCIONES EN LOS USUARIOS Y SU ENTORNO', '2 SEM', 'MARLLY LOPEZ', '9:00 AM', '11:15 AM'],
+  ['601A', 'ENFERMERIA', 'CUIDAR INTEGRALMENTE A LA PAREJA EN EL EMBARAZO Y EL PARTO', '4 SEM', 'ARIEL PUELLO', '9:00 AM', '11:15 AM'],
+  ['502A', 'SALUD ORAL', 'PASA A LOS SABADOS AM', '3 SEM', '', '9:00 AM', '11:15 AM'],
+  ['502A', 'CLINICA VETERINARIA', 'E-SERVCLIESERVICIO AL CLIENTE', '3 SEM', 'CRISTIAN AROCA', '9:00 AM', '11:15 AM'],
+  ['602', 'NAVIERA-LOGISTICA-COMERCIO', 'PASA PARA LAS 6:30 AM', '1 SEM', '', '9:00 AM', '11:15 AM'],
+  ['702', 'NAVIERA-LOGISTICA-COMERCIO', 'E-RECDEMERECEPCIÓN Y DESPACHO DE LAS MERCANCÍAS', '2 SEM', 'LUCIA TERESA ELJACH MOSQUERA', '9:00 AM', '11:15 AM'],
+  ['501B', 'NAVIERA-LOGISTICA-COMERCIO', 'E-ZONFRAZONA FRANCA', '3 SEM', 'CASTOR RAMIREZ', '9:00 AM', '11:15 AM'],
+  ['2D', 'AUX VUELO', 'E-AGEVIAAGENCIA DE VIAJES I', '1 SEM', 'JEISON YEPES', '9:00 AM', '11:15 AM'],
+  ['2E', 'COCINA NAC E INTER', 'E-COCFRIACOCINA FRÍA I', '1 SEM', 'HORTENSIA HERRERA', '9:00 AM', '11:15 AM'],
+  ['501B', 'ENFERMERIA', 'E-CONIUECONTROLAR LAS INFECCIONES EN LOS USUARIOS Y SU ENTORNO', '2 SEM', 'KATIA VALENCIA', '6:30 AM', '8:45 AM'],
+  ['604', 'ENFERMERIA', 'CUIDAR INTEGRALMENTE A LA PAREJA EN EL EMBARAZO Y EL PARTO', '4 SEM', 'ARIEL PUELLO', '6:30 AM', '8:45 AM'],
+  ['3B', 'FARMACIA', 'E-BIOSEGBIOSEGURIDAD', '2 SEM', 'MONICA RODRIGUEZ RODRIGUEZ', '6:30 AM', '8:45 AM'],
+  ['3A', 'FARMACIA', 'E-PRIAUXPRIMEROS AUXILIOS', '3 SEM', 'LILIANA MANRIQUE', '6:30 AM', '8:45 AM'],
+  ['4A', 'COSMETOLOGIA', 'E-DEPIDEPILACIÓN I', '2 SEM', 'KETTY CAMPOS', '6:30 AM', '8:45 AM'],
+  ['601A', 'CLINICA VETERINARIA', 'PASA A SABADO PM', '3 SEM', '', '6:30 AM', '8:45 AM'],
+  ['602', 'NAVIERA-LOGISTICA-COMERCIO', 'E-RECDEMERECEPCIÓN Y DESPACHO DE LAS MERCANCÍAS', '2 SEM', 'CASTOR RAMIREZ', '6:30 AM', '8:45 AM'],
+  ['106', 'PRIMERA INFANCIA', 'E-LEGADULEGISLACIÓN ADUANERA', '2 SEM', 'LUCIA ELJACH', '6:30 AM', '8:45 AM'],
+  ['601B', 'AUX VUELO', 'E-PSIEVOPSICOLOGÍA EVOLUTIVA', '2 SEM', 'MARIA TERESA VARGAS', '6:30 AM', '8:45 AM'],
+  ['2E', 'COCINA NAC E INTER', 'T-MALMANIPULACIÓN DE ALIMENTOS', '2 SEM', 'JEISON YEPES', '6:30 AM', '8:45 AM'],
+  ['2D', 'COCINA NAC E INTER', 'E-COCCAICOCINA CALIENTE III', '3 SEM', 'NICOLAZA MEDINA', '6:30 AM', '8:45 AM'],
+  ['2D', 'COCINA NAC E INTER', 'E-COCINTICOCINA INTERNACIONAL II', '3 SEM', 'VICTOR ALCAZAR', '6:30 AM', '8:45 AM'],
+  ['SISTEMAS 1', 'DISEÑO GRAFICO', 'E-COMGRACOMPOSICIÓN GRÁFICA', '2 SEM', 'ADRIANA GAVIRIA', '6:30 AM', '8:45 AM'],
+  ['SISTEMAS 1', 'SISTEMAS-SOFTWARE', 'E-CPWCONSTRUCCIÓN Y MANTENIMIENTO DE PÁGINAS WEB', '2 SEM', 'JULIO MATURANA', '6:30 AM', '8:45 AM'],
+  ['MECANICA DIESEL', 'MECANICA DIESEL', 'E-RSIREPARACIÓN DE LOS SISTEMAS DE COMBUSTIBLES DIÉSEL II', '2 SEM', 'HERNANDO LUIS GUZMAN ORTEGA', '6:30 AM', '8:45 AM'],
+  ['MECANICA DIESEL', 'MECANICA DIESEL', 'E-RSIREPARACIÓN DE LOS SISTEMAS DE COMBUSTIBLES DIÉSEL II', '3 SEM', 'HERNANDO LUIS GUZMAN ORTEGA', '6:30 AM', '8:45 AM'],
+  ['MONTACARGA', 'MONTACARGA', 'E-PROCOM3PROCEDIMIENTOS OPERACIONALES DE MONTACARGA 3', '2 SEM', 'ELADIO BLANQUICETT RAMIREZ', '6:30 AM', '8:45 AM'],
+  ['6B', 'LENGUA INGLESA', 'NIVEL 11', '2 SEM', 'JOSE TARA', '6:30 AM', '8:45 AM']
+];
+
 function findOrAdd(items, name, createItem) {
   const found = items.find((item) => item.nombre === name);
   if (found) return found;
@@ -286,6 +319,46 @@ filasNuevas.forEach(([salon, carrera, materia, semestre, profesor], index) => {
     horaFin: '18:15',
     modalidad: 'Semipresencial',
     corte: 'MOD#4',
+    carrera,
+    semestre,
+    estudianteIds: ['est-001']
+  });
+});
+
+filasCorte5.forEach(([salon, carrera, materia, semestre, profesor, horaInicio, horaFin], index) => {
+  const teacher = profesor ? findOrAdd(profesoresImagen, profesor, (id) => ({
+    id: `img-prof-${id}`,
+    nombre: profesor,
+    email: 'Contacto institucional',
+    telefono: 'Contacto institucional',
+    departamento: carrera,
+    oficina: 'Coordinacion academica',
+    horarioAtencion: 'Consultar disponibilidad',
+    foto: profesor.split(' ').map((part) => part[0]).join('').slice(0, 2),
+    color: 'from-blue-500 to-indigo-600'
+  })) : null;
+  const subject = findOrAdd(materiasImagen, materia, (id) => ({
+    id: `img-mat-${id}`,
+    nombre: materia,
+    codigo: `MOD5-${String(id).padStart(2, '0')}`,
+    programa: carrera,
+    creditos: 0,
+    departamento: carrera,
+    color: 'from-blue-500 to-indigo-500'
+  }));
+  const room = findOrAdd(salonesImagen, salon, (id) => ({ id: `img-salon-${id}`, nombre: salon, edificio: 'Sede principal', tipo: 'Aula' }));
+
+  horariosImagen.push({
+    id: `img-corte5-hor-${index + 1}`,
+    materiaId: subject.id,
+    profesorId: teacher?.id || null,
+    salonId: room.id,
+    dia: 'Corte 5',
+    fecha: '07 de septiembre de 2026B',
+    horaInicio,
+    horaFin,
+    modalidad: 'Presencial',
+    corte: 'MOD#5',
     carrera,
     semestre,
     estudianteIds: ['est-001']
