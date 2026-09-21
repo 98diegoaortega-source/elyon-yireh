@@ -85,7 +85,7 @@ function scheduleMatchesQuestion(item, question) {
     item.horaInicio,
     item.horaFin
   ].join(' '));
-  return normalizeText(question).split(/\s+/).filter(Boolean).some((term) => term.length > 2 && haystack.includes(term));
+  return normalizeText(question).replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(Boolean).some((term) => term.length > 2 && haystack.includes(term));
 }
 
 function formatChatSchedule(item) {

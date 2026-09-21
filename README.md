@@ -46,6 +46,9 @@ http://localhost:4000
 - GET /api/v1/health
 - GET /api/v1/estadisticas
 - GET /api/v1/programas
+- GET /api/v1/ultima-actualizacion
+- GET /api/v1/estadisticas-graficos
+- POST /api/v1/chat
 - GET /api/v1/profesores
 - GET /api/v1/profesores/:id
 - GET /api/v1/materias
