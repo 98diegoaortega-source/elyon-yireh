@@ -52,8 +52,19 @@ const chatInput = document.getElementById('chatInput');
 const chatMessages = document.getElementById('chatMessages');
 const notificationButton = document.getElementById('notificationButton');
 const installButton = document.getElementById('installButton');
+const favoritesSection = document.getElementById('favoritesSection');
+const favoritesContainer = document.getElementById('favoritesContainer');
+const clearFavorites = document.getElementById('clearFavorites');
+const languageToggle = document.getElementById('languageToggle');
 let deferredInstallPrompt;
 const HISTORY_KEY = 'elyon-yireh-search-history';
+const FAVORITES_KEY = 'elyon_favorites';
+const LANGUAGE_KEY = 'elyon_lang';
+let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'es';
+const translations = {
+  es: { favorites: 'Mis favoritos', clearFavorites: 'Limpiar favoritos', searcher: 'Buscador', clear: 'Limpiar', teacherOrQuery: 'Profesor o consulta', program: 'Programa', schedule: 'Horario', date: 'Fecha o periodo', search: 'Buscar', results: 'Resultados', details: 'Ver detalles', addCalendar: 'Añadir a Calendar', share: 'Compartir' },
+  en: { favorites: 'My favorites', clearFavorites: 'Clear favorites', searcher: 'Search', clear: 'Clear', teacherOrQuery: 'Teacher or query', program: 'Program', schedule: 'Schedule', date: 'Date or period', search: 'Search', results: 'Results', details: 'View details', addCalendar: 'Add to Calendar', share: 'Share' }
+};
 let adminToken = sessionStorage.getItem('academic_admin_token') || '';
 let searchDebounce;
 let isLoading = false;
@@ -102,6 +113,7 @@ async function loadData() {
     state.allSchedule = scheduleRes.data || [];
     state.allTeachers = teachersRes.data || [];
     renderStatistics(statisticsRes);
+    renderFavorites();
     render();
   } finally {
     clearTimeout(slowMessage);
@@ -119,6 +131,60 @@ function setLoading(value) {
 function renderStatistics(data) {
   if (!data || !statistics) return;
   statistics.textContent = `${data.profesores} profesores · ${data.horarios} horarios · ${data.programas} programas`;
+}
+
+function getFavorites() {
+  try {
+    const values = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+    return Array.isArray(values) ? values : [];
+  } catch {
+    return [];
+  }
+}
+
+function isFavorite(id) {
+  return getFavorites().includes(id);
+}
+
+function toggleFavorite(id) {
+  const favorites = getFavorites();
+  const next = favorites.includes(id) ? favorites.filter((favorite) => favorite !== id) : [...favorites, id];
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+  renderFavorites();
+  render();
+}
+
+function renderFavorites() {
+  const items = getFavorites().map((id) => state.allSchedule.find((item) => item.id === id)).filter(Boolean);
+  favoritesSection.classList.toggle('hidden', !items.length);
+  favoritesContainer.innerHTML = items.map((item) => `<article class="favorite-card"><strong>${item.materia?.nombre || item.carrera || 'Clase'}</strong><span>${item.profesor?.nombre || 'Docente'} · ${item.horaInicio} - ${item.horaFin}</span><button type="button" data-favorite-remove="${item.id}">★</button></article>`).join('');
+  favoritesContainer.querySelectorAll('[data-favorite-remove]').forEach((button) => button.addEventListener('click', () => toggleFavorite(button.dataset.favoriteRemove)));
+}
+
+function applyLanguage() {
+  document.querySelectorAll('[data-i18n]').forEach((element) => {
+    const key = element.dataset.i18n;
+    if (translations[currentLanguage][key]) element.textContent = translations[currentLanguage][key];
+  });
+  languageToggle.textContent = currentLanguage === 'es' ? 'ES | EN' : 'EN | ES';
+  renderFavorites();
+  render();
+}
+
+function switchLanguage() {
+  currentLanguage = currentLanguage === 'es' ? 'en' : 'es';
+  localStorage.setItem(LANGUAGE_KEY, currentLanguage);
+  applyLanguage();
+}
+
+function addToGoogleCalendar(itemId) {
+  const item = state.allSchedule.find((entry) => entry.id === itemId);
+  if (!item) return;
+  const title = `Clase de ${item.materia?.nombre || 'materia'} con ${item.profesor?.nombre || 'docente'}`;
+  const details = `${item.carrera || item.materia?.programa || 'Programa'} · ${item.semestre || 'Semestre'} · ${item.fecha || ''} · ${item.horaInicio} - ${item.horaFin}`;
+  const location = item.salon?.nombre || 'Aula por asignar';
+  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 function getSearchHistory() {
@@ -270,9 +336,7 @@ function renderCards(items) {
             <div class="rounded-2xl bg-gradient-to-br ${accentClass} p-3 text-sm font-bold text-white shadow-lg">
               CORTE 5
             </div>
-            <button class="rounded-full border border-slate-700 bg-slate-900/50 px-2.5 py-1 text-xs text-slate-300" data-open="${item.id}">
-              Ver detalles
-            </button>
+            <div class="card-actions"><button class="favorite-star ${isFavorite(item.id) ? 'is-favorite' : ''}" type="button" data-favorite="${item.id}" aria-label="${isFavorite(item.id) ? 'Quitar favorito' : 'Agregar favorito'}">★</button><button class="rounded-full border border-slate-700 bg-slate-900/50 px-2.5 py-1 text-xs text-slate-300" data-open="${item.id}">${translations[currentLanguage].details}</button></div>
           </div>
 
           <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-cyan-200">
@@ -311,8 +375,9 @@ function renderCards(items) {
           </div>
 
           <button type="button" class="share-whatsapp mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-green-200 px-4 py-2.5 text-sm font-semibold text-green-700" data-share="${item.id}">
-            <i class="ph ph-whatsapp-logo"></i> Compartir
+            <i class="ph ph-whatsapp-logo"></i> ${translations[currentLanguage].share}
           </button>
+          <button type="button" class="calendar-card-button mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-200 px-4 py-2.5 text-sm font-semibold text-blue-700" data-calendar="${item.id}">📅 ${translations[currentLanguage].addCalendar}</button>
         </article>
       `;
     })
@@ -324,6 +389,12 @@ function renderCards(items) {
   });
   cardsContainer.querySelectorAll('[data-share]').forEach((button) => {
     button.addEventListener('click', () => shareSchedule(button.dataset.share));
+  });
+  cardsContainer.querySelectorAll('[data-favorite]').forEach((button) => {
+    button.addEventListener('click', () => toggleFavorite(button.dataset.favorite));
+  });
+  cardsContainer.querySelectorAll('[data-calendar]').forEach((button) => {
+    button.addEventListener('click', () => addToGoogleCalendar(button.dataset.calendar));
   });
 }
 
@@ -665,6 +736,12 @@ document.getElementById('adminLoginButton').addEventListener('click', () => admi
 document.getElementById('adminLogout').addEventListener('click', () => { adminToken = ''; sessionStorage.removeItem('academic_admin_token'); adminEditor.classList.add('hidden'); adminLogin.classList.remove('hidden'); });
 createScheduleButton.addEventListener('click', () => createScheduleForm.classList.toggle('hidden'));
 createScheduleForm.addEventListener('submit', (event) => createAdminRow(event).catch((error) => { createScheduleMessage.textContent = error.message; }));
+clearFavorites.addEventListener('click', () => {
+  localStorage.removeItem(FAVORITES_KEY);
+  renderFavorites();
+  render();
+});
+languageToggle.addEventListener('click', switchLanguage);
 
 calendarButton.addEventListener('click', () => {
   renderVisualCalendar(getFilteredSchedule());
@@ -747,3 +824,5 @@ loadData().catch((error) => {
 if (pwaSplash && window.matchMedia('(display-mode: standalone)').matches) {
   setTimeout(() => pwaSplash.classList.add('is-hidden'), 1500);
 }
+
+applyLanguage();

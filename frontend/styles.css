@@ -452,6 +452,22 @@ button {
   max-width: 660px;
 }
 
+.language-toggle { border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); padding: 7px 10px; font-size: 11px; font-weight: 800; }
+.favorites-section { max-width: 660px; margin: 0 auto 14px; }
+.favorites-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; color: var(--text); }
+.favorites-heading h2 { font-size: 18px; font-weight: 800; }
+.favorites-heading button { color: var(--accent); font-size: 12px; font-weight: 700; }
+.favorites-container { display: grid; gap: 8px; }
+.favorite-card { position: relative; display: flex; flex-direction: column; gap: 3px; border-left: 4px solid #087443; border-radius: 10px; background: var(--surface); padding: 11px 42px 11px 13px; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06); color: var(--text); }
+.favorite-card strong { font-size: 13px; }
+.favorite-card span { color: var(--muted); font-size: 12px; }
+.favorite-card button { position: absolute; top: 9px; right: 12px; color: #FFD700; font-size: 20px; }
+.card-actions { display: flex; align-items: center; gap: 8px; }
+.favorite-star { color: #CCCCCC; font-size: 25px; line-height: 1; }
+.favorite-star.is-favorite { color: #FFD700; }
+.calendar-card-button { transition: background-color 0.2s ease, transform 0.2s ease; }
+.calendar-card-button:hover { background: rgba(33, 103, 232, 0.08); transform: translateY(-1px); }
+
 .program-chip {
   border: 1px solid var(--accent);
   border-radius: 999px;
