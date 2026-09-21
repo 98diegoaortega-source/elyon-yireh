@@ -592,3 +592,54 @@ button {
   .week-day strong { color: #e2e8f0; }
   .pwa-splash { background: #0f172a; color: #e2e8f0; }
 }
+
+.calendar-launch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px auto 0;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.calendar-launch.hidden { display: none; }
+
+.visual-calendar { overflow-x: auto; }
+.calendar-columns { display: grid; min-width: 760px; grid-template-columns: repeat(5, minmax(140px, 1fr)); gap: 8px; }
+.calendar-day-column { min-width: 0; }
+.calendar-day-heading { padding: 10px; border-bottom: 2px solid var(--accent); color: var(--text); font-size: 12px; font-weight: 800; text-align: center; }
+.calendar-track { position: relative; height: 720px; border-right: 1px solid var(--stroke); background: rgba(8, 116, 67, 0.03); }
+.calendar-slot { position: absolute; left: 0; right: 0; border-top: 1px solid var(--stroke); }
+.calendar-event { position: absolute; left: 5px; right: 5px; z-index: 2; display: flex; flex-direction: column; gap: 3px; overflow: hidden; border-left: 4px solid #087443; border-radius: 8px; background: #087443; color: white; padding: 7px; text-align: left; box-shadow: 0 4px 10px rgba(8, 116, 67, 0.22); }
+.calendar-event strong { font-size: 11px; line-height: 1.2; }
+.calendar-event span, .calendar-event small { font-size: 10px; opacity: 0.9; }
+
+.chat-fab { position: fixed; right: 22px; bottom: 22px; z-index: 40; display: grid; width: 56px; height: 56px; place-items: center; border-radius: 50%; background: #087443; color: #fff; font-size: 25px; box-shadow: 0 12px 30px rgba(8, 116, 67, 0.35); }
+.chat-panel { position: fixed; top: 0; right: 0; z-index: 50; display: flex; width: min(390px, 100%); height: 100vh; flex-direction: column; background: var(--surface-strong); box-shadow: -12px 0 35px rgba(15, 23, 42, 0.2); transform: translateX(105%); transition: transform 0.3s ease; }
+.chat-panel.is-open { transform: translateX(0); }
+.chat-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--stroke); background: #087443; color: #fff; padding: 18px; }
+.chat-header h2 { font-size: 18px; font-weight: 800; }
+.chat-header button { color: #fff; font-size: 20px; }
+.chat-eyebrow { font-size: 10px; letter-spacing: 0.16em; opacity: 0.8; text-transform: uppercase; }
+.chat-messages { display: flex; flex: 1; flex-direction: column; gap: 10px; overflow-y: auto; padding: 18px; }
+.chat-bubble { max-width: 86%; white-space: pre-line; border-radius: 16px; padding: 10px 12px; font-size: 13px; line-height: 1.4; }
+.chat-bubble-assistant { align-self: flex-start; background: rgba(8, 116, 67, 0.1); color: var(--text); }
+.chat-bubble-user { align-self: flex-end; background: #087443; color: #fff; }
+.chat-form { display: flex; gap: 8px; border-top: 1px solid var(--stroke); padding: 12px; }
+.chat-form input { min-width: 0; flex: 1; border: 1px solid var(--stroke); border-radius: 12px; background: var(--surface); color: var(--text); padding: 10px; outline: none; }
+.chat-form button { display: grid; width: 42px; place-items: center; border-radius: 12px; background: #087443; color: #fff; }
+
+.admin-dashboard { min-height: 100vh; padding: 24px; }
+.admin-dashboard-shell { max-width: 1180px; margin: 0 auto; }
+.admin-dashboard-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 20px; }
+.admin-dashboard-header h1 { color: var(--text); font-size: 28px; font-weight: 800; }
+.admin-back-link { border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); padding: 9px 14px; font-size: 13px; font-weight: 700; }
+.admin-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
+.admin-chart-card { min-height: 320px; padding: 20px; }
+.admin-chart-card h2 { margin-bottom: 16px; color: var(--text); font-size: 17px; font-weight: 800; }
+.admin-chart-wide { grid-column: 1 / -1; }
+@media (max-width: 720px) { .admin-dashboard { padding: 12px; } .admin-dashboard-header { align-items: flex-start; flex-direction: column; } .admin-chart-grid { grid-template-columns: 1fr; } .admin-chart-wide { grid-column: auto; } }

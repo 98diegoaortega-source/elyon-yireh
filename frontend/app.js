@@ -41,6 +41,18 @@ const forceRefreshButton = document.getElementById('forceRefreshButton');
 const searchHistory = document.getElementById('searchHistory');
 const statistics = document.getElementById('statistics');
 const pwaSplash = document.getElementById('pwaSplash');
+const calendarButton = document.getElementById('calendarButton');
+const closeCalendarButton = document.getElementById('closeCalendarButton');
+const visualCalendar = document.getElementById('visualCalendar');
+const chatButton = document.getElementById('chatButton');
+const chatPanel = document.getElementById('chatPanel');
+const closeChatButton = document.getElementById('closeChatButton');
+const chatForm = document.getElementById('chatForm');
+const chatInput = document.getElementById('chatInput');
+const chatMessages = document.getElementById('chatMessages');
+const notificationButton = document.getElementById('notificationButton');
+const installButton = document.getElementById('installButton');
+let deferredInstallPrompt;
 const HISTORY_KEY = 'elyon-yireh-search-history';
 let adminToken = sessionStorage.getItem('academic_admin_token') || '';
 let searchDebounce;
@@ -217,6 +229,7 @@ function renderCards(items) {
 
   if (!hasSearch) {
     resultCount.textContent = '';
+    calendarButton.classList.add('hidden');
     cardsContainer.innerHTML = `
       <div class="rounded-3xl border border-dashed border-blue-200 bg-blue-50/60 p-10 text-center">
         <i class="ph ph-magnifying-glass mb-3 text-4xl text-blue-500"></i>
@@ -228,8 +241,10 @@ function renderCards(items) {
   }
 
   resultCount.textContent = `${items.length} resultado${items.length === 1 ? '' : 's'}`;
+  calendarButton.classList.remove('hidden');
 
   if (!items.length) {
+    calendarButton.classList.add('hidden');
     cardsContainer.innerHTML = `
       <div class="glass col-span-full rounded-3xl p-12 text-center">
         <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 text-cyan-300">
@@ -317,6 +332,74 @@ function shareSchedule(itemId) {
   if (!item) return;
   const detail = `${item.profesor?.nombre || 'Docente'} - ${item.materia?.nombre || 'Materia'} - ${item.horaInicio} - ${item.horaFin}`;
   window.open(`https://wa.me/?text=${encodeURIComponent(`Consulta en ELYON YIREH: ${detail}`)}`, '_blank', 'noopener,noreferrer');
+}
+
+function minutesFromTime(value) {
+  const match = String(value || '').match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!match) return 0;
+  let hour = Number(match[1]);
+  const meridiem = match[3]?.toUpperCase();
+  if (meridiem === 'PM' && hour < 12) hour += 12;
+  if (meridiem === 'AM' && hour === 12) hour = 0;
+  return hour * 60 + Number(match[2]);
+}
+
+function renderVisualCalendar(items) {
+  const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+  const columns = days.map((day, dayIndex) => {
+    const events = items.filter((item, index) => normalize(item.dia).includes(normalize(day)) || index % 5 === dayIndex);
+    const eventMarkup = events.map((item) => {
+      const start = Math.max(360, minutesFromTime(item.horaInicio));
+      const end = Math.max(start + 30, minutesFromTime(item.horaFin));
+      const top = ((start - 360) / 60) * 60;
+      const height = Math.max(34, ((end - start) / 60) * 60);
+      return `<button type="button" class="calendar-event" style="top:${top}px;height:${height}px" data-open="${item.id}"><strong>${item.materia?.nombre || item.carrera || 'Clase'}</strong><span>${item.horaInicio} - ${item.horaFin}</span><small>${item.salon?.nombre || 'Aula'}</small></button>`;
+    }).join('');
+    const slots = Array.from({ length: 12 }, (_, index) => `<span class="calendar-slot" style="top:${index * 60}px"></span>`).join('');
+    return `<div class="calendar-day-column"><div class="calendar-day-heading">${day}</div><div class="calendar-track">${slots}${eventMarkup}</div></div>`;
+  }).join('');
+  visualCalendar.innerHTML = `<div class="calendar-columns">${columns}</div>`;
+  visualCalendar.querySelectorAll('[data-open]').forEach((button) => button.addEventListener('click', () => openModal(button.dataset.open)));
+}
+
+function addChatMessage(text, role) {
+  const bubble = document.createElement('div');
+  bubble.className = `chat-bubble chat-bubble-${role}`;
+  bubble.textContent = text;
+  chatMessages.appendChild(bubble);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+async function askChatbot(question) {
+  addChatMessage(question, 'user');
+  chatInput.value = '';
+  try {
+    const result = await fetchJson(`${API_BASE_URL}/api/v1/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pregunta: question }) });
+    addChatMessage([result.respuesta, ...(result.horarios || [])].filter(Boolean).join('\n'), 'assistant');
+  } catch {
+    addChatMessage('No pude consultar el asistente. Intenta nuevamente.', 'assistant');
+  }
+}
+
+async function enableNotifications() {
+  const permission = await Notification.requestPermission();
+  if (permission === 'granted') {
+    localStorage.setItem('elyon-yireh-notifications', 'enabled');
+    notificationButton.classList.add('hidden');
+    checkScheduleUpdates();
+  }
+}
+
+async function checkScheduleUpdates() {
+  if (localStorage.getItem('elyon-yireh-notifications') !== 'enabled') return;
+  try {
+    const result = await fetchJson(`${API_BASE_URL}/api/v1/ultima-actualizacion`);
+    const previous = localStorage.getItem('elyon-yireh-last-update');
+    if (previous && previous !== result.timestamp) new Notification('ELYON YIREH', { body: 'Hay cambios nuevos en los horarios.' });
+    localStorage.setItem('elyon-yireh-last-update', result.timestamp);
+  } catch (error) {
+    console.warn('No se pudo comprobar la actualización de horarios:', error.message);
+  }
 }
 
 function renderTeachers() {
@@ -582,6 +665,42 @@ document.getElementById('adminLoginButton').addEventListener('click', () => admi
 document.getElementById('adminLogout').addEventListener('click', () => { adminToken = ''; sessionStorage.removeItem('academic_admin_token'); adminEditor.classList.add('hidden'); adminLogin.classList.remove('hidden'); });
 createScheduleButton.addEventListener('click', () => createScheduleForm.classList.toggle('hidden'));
 createScheduleForm.addEventListener('submit', (event) => createAdminRow(event).catch((error) => { createScheduleMessage.textContent = error.message; }));
+
+calendarButton.addEventListener('click', () => {
+  renderVisualCalendar(getFilteredSchedule());
+  document.getElementById('tarjetasView').classList.add('hidden');
+  document.getElementById('calendarView').classList.remove('hidden');
+});
+closeCalendarButton.addEventListener('click', () => {
+  document.getElementById('calendarView').classList.add('hidden');
+  document.getElementById('tarjetasView').classList.remove('hidden');
+});
+chatButton.addEventListener('click', () => { chatPanel.classList.add('is-open'); chatInput.focus(); });
+closeChatButton.addEventListener('click', () => chatPanel.classList.remove('is-open'));
+chatForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const question = chatInput.value.trim();
+  if (question) askChatbot(question);
+});
+
+if ('Notification' in window) {
+  notificationButton.classList.toggle('hidden', localStorage.getItem('elyon-yireh-notifications') === 'enabled');
+  notificationButton.addEventListener('click', enableNotifications);
+  setInterval(checkScheduleUpdates, 30 * 60 * 1000);
+}
+
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  installButton.classList.remove('hidden');
+});
+installButton.addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installButton.classList.add('hidden');
+});
 
 document.querySelectorAll('.tab-btn').forEach((button) => {
   button.addEventListener('click', () => {

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#087443" />
+    <title>ELYON YIREH | Dashboard</title>
+    <link rel="stylesheet" href="./styles.css?v=3" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  </head>
+  <body class="admin-dashboard">
+    <main class="admin-dashboard-shell">
+      <header class="admin-dashboard-header glass">
+        <div>
+          <p class="chat-eyebrow">Panel administrativo</p>
+          <h1>Analítica académica</h1>
+        </div>
+        <a class="admin-back-link" href="./">Volver al buscador</a>
+      </header>
+      <section class="admin-chart-grid">
+        <article class="admin-chart-card glass"><h2>Profesores por programa</h2><canvas id="programChart"></canvas></article>
+        <article class="admin-chart-card glass"><h2>Horarios por día</h2><canvas id="dayChart"></canvas></article>
+        <article class="admin-chart-card glass admin-chart-wide"><h2>Carga horaria por docente</h2><canvas id="teacherChart"></canvas></article>
+      </section>
+      <p id="dashboardStatus" class="statistics-line">Cargando datos...</p>
+    </main>
+    <script>
+      const API_BASE_URL = 'https://elyon-yireh-production.up.railway.app';
+      const palette = ['#087443', '#2167e8', '#d97706', '#be123c', '#0891b2', '#7c3aed', '#65a30d', '#0f766e'];
+      const status = document.getElementById('dashboardStatus');
+      function createChart(id, config) { return new Chart(document.getElementById(id), config); }
+      fetch(`${API_BASE_URL}/api/v1/estadisticas-graficos`)
+        .then((response) => response.json())
+        .then((data) => {
+          createChart('programChart', { type: 'bar', data: { labels: data.profesoresPorPrograma.map((item) => item.programa), datasets: [{ label: 'Profesores', data: data.profesoresPorPrograma.map((item) => item.cantidad), backgroundColor: palette }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
+          createChart('dayChart', { type: 'doughnut', data: { labels: data.horariosPorDia.map((item) => item.dia), datasets: [{ data: data.horariosPorDia.map((item) => item.cantidad), backgroundColor: palette }] }, options: { responsive: true } });
+          createChart('teacherChart', { type: 'line', data: { labels: data.cargaPorDocente.map((item) => item.docente), datasets: [{ label: 'Horas', data: data.cargaPorDocente.map((item) => item.horas), borderColor: '#087443', backgroundColor: 'rgba(8,116,67,.14)', fill: true, tension: 0.3 }] }, options: { responsive: true, scales: { y: { beginAtZero: true } } } });
+          status.textContent = 'Datos actualizados desde el backend.';
+        })
+        .catch(() => { status.textContent = 'No se pudieron cargar los gráficos.'; });
+    </script>
+  </body>
+</html>
