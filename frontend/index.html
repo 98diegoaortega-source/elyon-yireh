@@ -97,7 +97,7 @@
 
       <main>
         <section id="tarjetasView" class="view-panel">
-          <div class="reference-results mt-8"><div class="mb-4 flex items-center justify-between"><h2 class="text-2xl font-bold text-slate-900">Resultados</h2><span id="resultCount" class="text-slate-500"></span></div><div id="cardsContainer" class="grid gap-5"></div></div>
+          <div class="reference-results mt-8"><div class="mb-4 flex items-center justify-between"><h2 class="text-2xl font-bold text-slate-900">Resultados</h2><span id="resultCount" class="text-slate-500"></span></div><div id="cardsContainer" class="grid gap-5"></div><button id="forceRefreshButton" type="button" class="hidden mt-5 w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">Forzar actualización</button></div>
         </section>
 
         <section id="horarioView" class="view-panel hidden">
@@ -182,6 +182,25 @@
 
     <script src="./app.js"></script>
     <script>
+      function forceFrontendUpdate() {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (let registration of registrations) {
+              registration.unregister();
+            }
+            caches.keys().then(function(names) {
+              for (let name of names) caches.delete(name);
+              setTimeout(() => location.reload(true), 1000);
+            });
+          });
+          return;
+        }
+
+        location.reload(true);
+      }
+
+      document.getElementById('forceRefreshButton').addEventListener('click', forceFrontendUpdate);
+
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/service-worker.js').catch((error) => {

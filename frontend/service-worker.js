@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elyon-yireh-shell-v1';
+const CACHE_NAME = 'elyon-yireh-v3';
 const APP_SHELL = [
   '/',
   '/index.html',

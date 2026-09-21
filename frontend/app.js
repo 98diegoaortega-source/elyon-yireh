@@ -37,6 +37,7 @@ const timeSearch = document.getElementById('timeSearch');
 const dateSearch = document.getElementById('dateSearch');
 const clearSearch = document.getElementById('clearSearch');
 const resultCount = document.getElementById('resultCount');
+const forceRefreshButton = document.getElementById('forceRefreshButton');
 let adminToken = sessionStorage.getItem('academic_admin_token') || '';
 
 async function fetchJson(url, options = {}) {
@@ -517,4 +518,5 @@ myScheduleBtn.addEventListener('click', async () => {
 
 loadData().catch((error) => {
   cardsContainer.innerHTML = `<div class="glass rounded-3xl p-6 text-red-300">${error.message}</div>`;
+  forceRefreshButton.classList.remove('hidden');
 });
