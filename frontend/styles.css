@@ -453,6 +453,7 @@ button {
 }
 
 .language-toggle { border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); padding: 7px 10px; font-size: 11px; font-weight: 800; }
+.about-button { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--stroke); border-radius: 50%; background: var(--surface); color: var(--accent); font-size: 16px; }
 .favorites-section { max-width: 660px; margin: 0 auto 14px; }
 .favorites-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; color: var(--text); }
 .favorites-heading h2 { font-size: 18px; font-weight: 800; }
@@ -467,6 +468,16 @@ button {
 .favorite-star.is-favorite { color: #FFD700; }
 .calendar-card-button { transition: background-color 0.2s ease, transform 0.2s ease; }
 .calendar-card-button:hover { background: rgba(33, 103, 232, 0.08); transform: translateY(-1px); }
+.about-modal { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.72); padding: 16px; }
+.about-modal.hidden { display: none; }
+.about-card { position: relative; width: min(480px, 100%); border-top: 5px solid #087443; border-radius: 22px; background: var(--surface-strong); color: var(--text); padding: 28px; text-align: center; box-shadow: 0 25px 70px rgba(15, 23, 42, 0.3); }
+.about-close { position: absolute; top: 10px; right: 16px; color: var(--muted); font-size: 28px; }
+.about-logo { width: 110px; height: 110px; margin: 0 auto 14px; object-fit: contain; }
+.about-card h2 { font-size: 25px; font-weight: 900; }
+.about-subtitle { margin: 4px 0 16px; color: #087443; font-weight: 700; }
+.about-card p { margin-top: 10px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.about-stats { margin: 18px 0; border-radius: 14px; background: rgba(8, 116, 67, 0.1); color: #087443; padding: 12px; font-size: 14px; font-weight: 800; }
+.about-footer-button { margin-top: 18px; border-radius: 12px; background: #087443; color: white; padding: 10px 28px; font-weight: 800; }
 
 .program-chip {
   border: 1px solid var(--accent);
@@ -658,4 +669,10 @@ button {
 .admin-chart-card { min-height: 320px; padding: 20px; }
 .admin-chart-card h2 { margin-bottom: 16px; color: var(--text); font-size: 17px; font-weight: 800; }
 .admin-chart-wide { grid-column: 1 / -1; }
+.admin-analytics-summary { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-top: 16px; }
+.analytics-list { display: grid; gap: 8px; padding: 0; color: var(--text); list-style: none; }
+.analytics-list li { display: flex; justify-content: space-between; border-bottom: 1px solid var(--stroke); padding: 7px 0; font-size: 13px; }
+.analytics-list strong { color: #087443; }
+.analytics-total { display: block; color: #087443; font-size: 64px; text-align: center; }
 @media (max-width: 720px) { .admin-dashboard { padding: 12px; } .admin-dashboard-header { align-items: flex-start; flex-direction: column; } .admin-chart-grid { grid-template-columns: 1fr; } .admin-chart-wide { grid-column: auto; } }
+@media (max-width: 720px) { .admin-analytics-summary { grid-template-columns: 1fr; } }

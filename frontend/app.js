@@ -56,6 +56,11 @@ const favoritesSection = document.getElementById('favoritesSection');
 const favoritesContainer = document.getElementById('favoritesContainer');
 const clearFavorites = document.getElementById('clearFavorites');
 const languageToggle = document.getElementById('languageToggle');
+const aboutButton = document.getElementById('aboutButton');
+const aboutModal = document.getElementById('aboutModal');
+const closeAboutButton = document.getElementById('closeAboutButton');
+const closeAboutFooter = document.getElementById('closeAboutFooter');
+const aboutStats = document.getElementById('aboutStats');
 let deferredInstallPrompt;
 const HISTORY_KEY = 'elyon-yireh-search-history';
 const FAVORITES_KEY = 'elyon_favorites';
@@ -187,6 +192,20 @@ function addToGoogleCalendar(itemId) {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
+async function openAbout() {
+  aboutModal.classList.remove('hidden');
+  try {
+    const stats = await fetchJson(`${API_BASE_URL}/api/v1/estadisticas`);
+    aboutStats.textContent = `${stats.profesores} profesores · ${stats.horarios} horarios · ${stats.programas} programas`;
+  } catch {
+    aboutStats.textContent = 'Estadísticas no disponibles';
+  }
+}
+
+function closeAbout() {
+  aboutModal.classList.add('hidden');
+}
+
 function getSearchHistory() {
   try {
     const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
@@ -201,6 +220,16 @@ function saveSearchHistory(value) {
   if (!query) return;
   const history = [query, ...getSearchHistory().filter((item) => item !== query)].slice(0, 5);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function trackSearch(value) {
+  const query = value.trim();
+  if (!query) return;
+  fetch(`${API_BASE_URL}/api/v1/analytics/track`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo: 'busqueda', valor: query })
+  }).catch(() => {});
 }
 
 function renderSearchHistory() {
@@ -218,6 +247,7 @@ function renderSearchHistory() {
 
 function runSearch() {
   saveSearchHistory(searchInput.value);
+  trackSearch([searchInput.value, programSearch.value, timeSearch.value, dateSearch.value].filter(Boolean).join(' '));
   searchHistory.classList.add('hidden');
   render();
 }
@@ -742,6 +772,10 @@ clearFavorites.addEventListener('click', () => {
   render();
 });
 languageToggle.addEventListener('click', switchLanguage);
+aboutButton.addEventListener('click', openAbout);
+closeAboutButton.addEventListener('click', closeAbout);
+closeAboutFooter.addEventListener('click', closeAbout);
+aboutModal.addEventListener('click', (event) => { if (event.target === aboutModal) closeAbout(); });
 
 calendarButton.addEventListener('click', () => {
   renderVisualCalendar(getFilteredSchedule());

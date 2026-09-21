@@ -15,6 +15,13 @@ async function loadState(state) {
     horarios jsonb NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT now()
   )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS analytics (
+    id SERIAL PRIMARY KEY,
+    tipo TEXT NOT NULL,
+    valor TEXT,
+    ip TEXT,
+    fecha TIMESTAMPTZ DEFAULT NOW()
+  )`);
   const { rows } = await pool.query('SELECT profesores, materias, salones, estudiantes, horarios FROM academic_state WHERE id = 1');
   if (!rows[0]) {
     await saveState(state);
@@ -34,4 +41,30 @@ async function saveState(state) {
   [state.profesores, state.materias, state.salones, state.estudiantes, state.horarios]);
 }
 
-module.exports = { loadState, saveState };
+async function trackAnalytics(tipo, valor, ip) {
+  if (!pool) return false;
+  await pool.query('INSERT INTO analytics (tipo, valor, ip) VALUES ($1, $2, $3)', [tipo, valor || null, ip || null]);
+  return true;
+}
+
+async function getTopAnalytics(limit = 10) {
+  if (!pool) return [];
+  const { rows } = await pool.query(`SELECT valor, COUNT(*)::int AS total
+    FROM analytics WHERE tipo = 'busqueda' AND valor IS NOT NULL
+    GROUP BY valor ORDER BY total DESC, valor ASC LIMIT $1`, [limit]);
+  return rows;
+}
+
+async function getTotalAnalyticsToday() {
+  if (!pool) return 0;
+  const { rows } = await pool.query("SELECT COUNT(*)::int AS total FROM analytics WHERE tipo = 'busqueda' AND fecha >= CURRENT_DATE");
+  return rows[0]?.total || 0;
+}
+
+async function getAcademicState() {
+  if (!pool) return null;
+  const { rows } = await pool.query('SELECT * FROM academic_state WHERE id = 1');
+  return rows[0] || null;
+}
+
+module.exports = { loadState, saveState, trackAnalytics, getTopAnalytics, getTotalAnalyticsToday, getAcademicState };

@@ -22,6 +22,10 @@
         <article class="admin-chart-card glass"><h2>Horarios por día</h2><canvas id="dayChart"></canvas></article>
         <article class="admin-chart-card glass admin-chart-wide"><h2>Carga horaria por docente</h2><canvas id="teacherChart"></canvas></article>
       </section>
+      <section class="admin-analytics-summary">
+        <article class="admin-chart-card glass"><h2>Top 10 búsquedas</h2><ol id="topSearches" class="analytics-list"><li>Cargando...</li></ol></article>
+        <article class="admin-chart-card glass"><h2>Total búsquedas hoy</h2><strong id="todaySearches" class="analytics-total">0</strong></article>
+      </section>
       <p id="dashboardStatus" class="statistics-line">Cargando datos...</p>
     </main>
     <script>
@@ -38,6 +42,13 @@
           status.textContent = 'Datos actualizados desde el backend.';
         })
         .catch(() => { status.textContent = 'No se pudieron cargar los gráficos.'; });
+      Promise.all([
+        fetch(`${API_BASE_URL}/api/v1/analytics/top-10`).then((response) => response.json()),
+        fetch(`${API_BASE_URL}/api/v1/analytics/total-hoy`).then((response) => response.json())
+      ]).then(([top, total]) => {
+        document.getElementById('topSearches').innerHTML = (top.data || []).map((item) => `<li><span>${item.valor}</span><strong>${item.total}</strong></li>`).join('') || '<li>Sin búsquedas registradas</li>';
+        document.getElementById('todaySearches').textContent = total.total || 0;
+      }).catch(() => {});
     </script>
   </body>
 </html>

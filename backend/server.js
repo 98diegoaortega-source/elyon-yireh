@@ -1,5 +1,7 @@
 require('dotenv').config();
 
+const fs = require('fs/promises');
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
@@ -7,7 +9,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const { profesores, materias, salones, estudiantes, horarios } = require('./data');
-const { loadState, saveState } = require('./persistence');
+const { loadState, saveState, trackAnalytics, getTopAnalytics, getTotalAnalyticsToday, getAcademicState } = require('./persistence');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -200,6 +202,37 @@ app.get('/api/v1/estadisticas', (req, res) => {
     programas: getUniquePrograms().length,
     materias: materias.length
   });
+});
+
+app.post('/api/v1/analytics/track', async (req, res) => {
+  const tipo = String(req.body?.tipo || '').trim().slice(0, 40);
+  const valor = String(req.body?.valor || '').trim().slice(0, 160);
+  if (!tipo) return res.status(400).json({ success: false, message: 'El tipo de analytics es obligatorio' });
+
+  try {
+    await trackAnalytics(tipo, valor, req.ip);
+  } catch (error) {
+    console.warn('No se pudo guardar analytics:', error.message);
+  }
+  return res.json({ success: true });
+});
+
+app.get('/api/v1/analytics/top-10', async (req, res) => {
+  try {
+    return res.json({ success: true, data: await getTopAnalytics(10) });
+  } catch (error) {
+    console.warn('No se pudo consultar top analytics:', error.message);
+    return res.json({ success: true, data: [] });
+  }
+});
+
+app.get('/api/v1/analytics/total-hoy', async (req, res) => {
+  try {
+    return res.json({ success: true, total: await getTotalAnalyticsToday() });
+  } catch (error) {
+    console.warn('No se pudo consultar total analytics:', error.message);
+    return res.json({ success: true, total: 0 });
+  }
 });
 
 app.get('/api/v1/programas', (req, res) => {
@@ -485,15 +518,38 @@ async function start() {
     console.warn('No se pudo cargar PostgreSQL; se usarán los datos en memoria:', error.message);
   }
   app.listen(PORT, () => console.log(`API académica ejecutándose en http://localhost:${PORT}`));
+  setInterval(() => runBackup().catch((error) => console.warn('Backup automático fallido:', error.message)), 24 * 60 * 60 * 1000);
+  setTimeout(() => runBackup().catch((error) => console.warn('Backup inicial fallido:', error.message)), 60 * 1000);
 }
 
-start().catch((error) => {
-  console.error('No se pudo iniciar la API:', error);
-  process.exit(1);
-});
+async function runBackup() {
+  try {
+    const state = await getAcademicState();
+    if (!state) return null;
+    const backupsDirectory = path.join(__dirname, 'backups');
+    await fs.mkdir(backupsDirectory, { recursive: true });
+    const now = new Date();
+    const stamp = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}-${String(now.getUTCHours()).padStart(2, '0')}${String(now.getUTCMinutes()).padStart(2, '0')}`;
+    const filePath = path.join(backupsDirectory, `backup-${stamp}.json`);
+    await fs.writeFile(filePath, JSON.stringify(state, null, 2), 'utf8');
+    return filePath;
+  } catch (error) {
+    console.warn('No se pudo crear el backup; PostgreSQL no está disponible:', error.message);
+    return null;
+  }
+}
+
+if (require.main === module) {
+  start().catch((error) => {
+    console.error('No se pudo iniciar la API:', error);
+    process.exit(1);
+  });
+}
 
 app.use((error, req, res, next) => {
   if (res.headersSent) return next(error);
   console.error(error);
   return res.status(error.status || 500).json({ success: false, message: 'Error interno del servidor' });
 });
+
+module.exports = { app, runBackup };
