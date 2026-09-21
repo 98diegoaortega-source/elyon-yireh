@@ -44,6 +44,8 @@ http://localhost:4000
 ## Endpoints
 
 - GET /api/v1/health
+- GET /api/v1/estadisticas
+- GET /api/v1/programas
 - GET /api/v1/profesores
 - GET /api/v1/profesores/:id
 - GET /api/v1/materias
@@ -53,6 +55,8 @@ http://localhost:4000
 - GET /api/v1/horarios?salon=302
 - GET /api/v1/buscar?q=texto
 - GET /api/v1/estudiante/:id/horario
+
+El endpoint de estadísticas devuelve los totales actuales de profesores, horarios, programas y materias. El endpoint de programas devuelve un array ordenado de programas únicos.
 
 ## Depuración
 

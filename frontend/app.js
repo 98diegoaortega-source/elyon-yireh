@@ -38,11 +38,20 @@ const dateSearch = document.getElementById('dateSearch');
 const clearSearch = document.getElementById('clearSearch');
 const resultCount = document.getElementById('resultCount');
 const forceRefreshButton = document.getElementById('forceRefreshButton');
+const searchHistory = document.getElementById('searchHistory');
+const statistics = document.getElementById('statistics');
+const pwaSplash = document.getElementById('pwaSplash');
+const HISTORY_KEY = 'elyon-yireh-search-history';
 let adminToken = sessionStorage.getItem('academic_admin_token') || '';
+let searchDebounce;
+let isLoading = false;
 
 async function fetchJson(url, options = {}) {
   try {
-    const response = await fetch(url, options);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), options.signal ? 30000 : 30000);
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeout);
     const contentType = response.headers.get('content-type') || '';
     const result = contentType.includes('application/json') ? await response.json() : null;
 
@@ -57,19 +66,88 @@ async function fetchJson(url, options = {}) {
     return result;
   } catch (error) {
     console.error(`Error consultando ${url}:`, error);
-    throw error;
+    const friendlyError = new Error(error.name === 'AbortError'
+      ? 'No se pudo conectar con el servidor. Verifica tu conexión a internet.'
+      : 'No se pudo conectar con el servidor. Verifica tu conexión a internet.');
+    friendlyError.cause = error;
+    throw friendlyError;
   }
 }
 
 async function loadData() {
-  const [scheduleRes, teachersRes] = await Promise.all([
-    fetchJson(`${API_BASE_URL}/api/v1/horarios`),
-    fetchJson(`${API_BASE_URL}/api/v1/profesores`)
-  ]);
+  setLoading(true);
+  const slowMessage = setTimeout(() => {
+    cardsContainer.innerHTML = '<div class="loading-state"><span class="spinner" aria-hidden="true"></span><span>Cargando datos por primera vez, esto puede tardar unos segundos...</span></div>';
+  }, 5000);
 
-  state.allSchedule = scheduleRes.data || [];
-  state.allTeachers = teachersRes.data || [];
+  try {
+    const [scheduleRes, teachersRes, statisticsRes] = await Promise.all([
+      fetchJson(`${API_BASE_URL}/api/v1/horarios`),
+      fetchJson(`${API_BASE_URL}/api/v1/profesores`),
+      fetchJson(`${API_BASE_URL}/api/v1/estadisticas`)
+    ]);
+
+    state.allSchedule = scheduleRes.data || [];
+    state.allTeachers = teachersRes.data || [];
+    renderStatistics(statisticsRes);
+    render();
+  } finally {
+    clearTimeout(slowMessage);
+    setLoading(false);
+  }
+}
+
+function setLoading(value) {
+  isLoading = value;
+  if (value) {
+    cardsContainer.innerHTML = '<div class="loading-state"><span class="spinner" aria-hidden="true"></span><span>Cargando horarios...</span></div>';
+  }
+}
+
+function renderStatistics(data) {
+  if (!data || !statistics) return;
+  statistics.textContent = `${data.profesores} profesores · ${data.horarios} horarios · ${data.programas} programas`;
+}
+
+function getSearchHistory() {
+  try {
+    const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    return Array.isArray(history) ? history : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSearchHistory(value) {
+  const query = value.trim();
+  if (!query) return;
+  const history = [query, ...getSearchHistory().filter((item) => item !== query)].slice(0, 5);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function renderSearchHistory() {
+  const history = getSearchHistory();
+  searchHistory.innerHTML = history.map((item) => `<button type="button" class="search-history-item" data-history="${item.replace(/"/g, '&quot;')}">${item}</button>`).join('');
+  searchHistory.classList.toggle('hidden', !history.length);
+  searchHistory.querySelectorAll('[data-history]').forEach((button) => {
+    button.addEventListener('click', () => {
+      searchInput.value = button.dataset.history;
+      searchHistory.classList.add('hidden');
+      runSearch();
+    });
+  });
+}
+
+function runSearch() {
+  saveSearchHistory(searchInput.value);
+  searchHistory.classList.add('hidden');
   render();
+}
+
+function scheduleSearch() {
+  clearTimeout(searchDebounce);
+  cardsContainer.innerHTML = '<div class="loading-state"><span class="spinner" aria-hidden="true"></span><span>Buscando horarios...</span></div>';
+  searchDebounce = setTimeout(runSearch, 400);
 }
 
 function normalize(value) {
@@ -172,7 +250,7 @@ function renderCards(items) {
       const accentClass = item.materia?.color || 'from-slate-500 to-slate-700';
 
       return `
-        <article class="glass rounded-3xl p-5">
+        <article class="glass result-card rounded-3xl p-5">
           <div class="mb-4 flex items-start justify-between gap-3">
             <div class="rounded-2xl bg-gradient-to-br ${accentClass} p-3 text-sm font-bold text-white shadow-lg">
               CORTE 5
@@ -216,6 +294,10 @@ function renderCards(items) {
               <strong class="text-slate-900">${item.modalidad || 'Presencial'}</strong>
             </div>
           </div>
+
+          <button type="button" class="share-whatsapp mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-green-200 px-4 py-2.5 text-sm font-semibold text-green-700" data-share="${item.id}">
+            <i class="ph ph-whatsapp-logo"></i> Compartir
+          </button>
         </article>
       `;
     })
@@ -225,6 +307,16 @@ function renderCards(items) {
   cardsContainer.querySelectorAll('[data-open]').forEach((button) => {
     button.addEventListener('click', () => openModal(button.dataset.open));
   });
+  cardsContainer.querySelectorAll('[data-share]').forEach((button) => {
+    button.addEventListener('click', () => shareSchedule(button.dataset.share));
+  });
+}
+
+function shareSchedule(itemId) {
+  const item = state.allSchedule.find((entry) => entry.id === itemId);
+  if (!item) return;
+  const detail = `${item.profesor?.nombre || 'Docente'} - ${item.materia?.nombre || 'Materia'} - ${item.horaInicio} - ${item.horaFin}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(`Consulta en ELYON YIREH: ${detail}`)}`, '_blank', 'noopener,noreferrer');
 }
 
 function renderTeachers() {
@@ -443,18 +535,21 @@ async function createAdminRow(event) {
   }
 }
 
-searchInput.addEventListener('input', render);
-programSearch.addEventListener('change', render);
-timeSearch.addEventListener('change', render);
-dateSearch.addEventListener('input', render);
+searchInput.addEventListener('input', scheduleSearch);
+searchInput.addEventListener('focus', () => {
+  if (!searchInput.value.trim()) renderSearchHistory();
+});
+programSearch.addEventListener('input', scheduleSearch);
+timeSearch.addEventListener('input', scheduleSearch);
+dateSearch.addEventListener('input', scheduleSearch);
 searchButton.addEventListener('click', () => {
   searchInput.focus();
-  render();
+  runSearch();
 });
 searchInput.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
     event.preventDefault();
-    render();
+    runSearch();
   }
 });
 clearSearch.addEventListener('click', () => {
@@ -463,6 +558,15 @@ clearSearch.addEventListener('click', () => {
   timeSearch.value = '';
   dateSearch.value = '';
   render();
+});
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('#searchInput') && !event.target.closest('#searchHistory')) searchHistory.classList.add('hidden');
+});
+document.querySelectorAll('[data-program]').forEach((chip) => {
+  chip.addEventListener('click', () => {
+    programSearch.value = chip.dataset.program;
+    runSearch();
+  });
 });
 dayFilter?.addEventListener('change', render);
 semesterFilter?.addEventListener('change', render);
@@ -517,6 +621,10 @@ myScheduleBtn.addEventListener('click', async () => {
 });
 
 loadData().catch((error) => {
-  cardsContainer.innerHTML = `<div class="glass rounded-3xl p-6 text-red-300">${error.message}</div>`;
+  cardsContainer.innerHTML = '<div class="glass rounded-3xl p-6 text-rose-600">No se pudo conectar con el servidor. Verifica tu conexión a internet.</div>';
   forceRefreshButton.classList.remove('hidden');
 });
+
+if (pwaSplash && window.matchMedia('(display-mode: standalone)').matches) {
+  setTimeout(() => pwaSplash.classList.add('is-hidden'), 1500);
+}

@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
@@ -20,8 +21,11 @@ const configuredOrigins = process.env.CLIENT_ORIGIN || [
   'https://elyon-yireh-o4mdbt4on-diego-ortega1.vercel.app'
 ].join(',');
 const allowedOrigins = new Set(configuredOrigins.split(',').map((origin) => origin.trim()).filter(Boolean));
+const SCHEDULE_CACHE_TTL = 5 * 60 * 1000;
+const scheduleCache = new Map();
 
 app.use(helmet());
+app.use(compression());
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.has(origin)) return callback(null, true);
@@ -46,6 +50,36 @@ function getProfesorById(id) {
 
 function getSalonById(id) {
   return salones.find((salon) => salon.id === id) || null;
+}
+
+function getUniquePrograms() {
+  const programs = new Map();
+  [...materias.map((materia) => materia.programa), ...horarios.map((horario) => horario.carrera)]
+    .filter(Boolean)
+    .forEach((program) => {
+      const key = normalizeText(program);
+      if (!programs.has(key)) programs.set(key, program);
+    });
+  return [...programs.values()].sort((first, second) => first.localeCompare(second, 'es'));
+}
+
+function clearScheduleCache() {
+  scheduleCache.clear();
+}
+
+function scheduleCacheMiddleware(req, res, next) {
+  if (req.method !== 'GET') return next();
+
+  const cached = scheduleCache.get(req.originalUrl);
+  if (cached && cached.expiresAt > Date.now()) return res.json(cached.payload);
+  if (cached) scheduleCache.delete(req.originalUrl);
+
+  const originalJson = res.json.bind(res);
+  res.json = (payload) => {
+    scheduleCache.set(req.originalUrl, { payload, expiresAt: Date.now() + SCHEDULE_CACHE_TTL });
+    return originalJson(payload);
+  };
+  return next();
 }
 
 function requireAdmin(req, res, next) {
@@ -86,8 +120,22 @@ app.get('/api/v1/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'academic-schedule-api',
+    version: '1.0.0',
     timestamp: new Date().toISOString()
   });
+});
+
+app.get('/api/v1/estadisticas', (req, res) => {
+  return res.json({
+    profesores: profesores.length,
+    horarios: horarios.length,
+    programas: getUniquePrograms().length,
+    materias: materias.length
+  });
+});
+
+app.get('/api/v1/programas', (req, res) => {
+  return res.json(getUniquePrograms());
 });
 
 app.post('/api/v1/admin/login', loginRateLimit, (req, res) => {
@@ -133,6 +181,7 @@ app.post('/api/v1/admin/horarios', requireAdmin, async (req, res, next) => {
   };
 
   horarios.push(schedule);
+  clearScheduleCache();
   await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
   return res.status(201).json({ success: true, data: hydrateSchedule(schedule) });
 });
@@ -149,6 +198,7 @@ app.patch('/api/v1/admin/horarios/:id', requireAdmin, async (req, res, next) => 
     if (Object.prototype.hasOwnProperty.call(req.body, field)) schedule[field] = req.body[field];
   });
 
+  clearScheduleCache();
   await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
   return res.json({ success: true, data: hydrateSchedule(schedule) });
 });
@@ -159,6 +209,7 @@ app.delete('/api/v1/admin/horarios/:id', requireAdmin, async (req, res, next) =>
   if (scheduleIndex === -1) return res.status(404).json({ success: false, message: 'Horario no encontrado' });
 
   horarios.splice(scheduleIndex, 1);
+  clearScheduleCache();
   await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
   return res.json({ success: true, message: 'Horario eliminado' });
 });
@@ -220,7 +271,7 @@ app.get('/api/v1/materias/:id', (req, res) => {
   return res.json({ success: true, data: materia });
 });
 
-app.get('/api/v1/horarios', (req, res) => {
+app.get('/api/v1/horarios', scheduleCacheMiddleware, (req, res) => {
   const { dia, salon, profesor, materia } = req.query;
   let filtered = [...horarios];
 
