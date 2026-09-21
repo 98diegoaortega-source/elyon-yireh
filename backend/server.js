@@ -1,18 +1,27 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const jwt = require('jsonwebtoken');
 const { profesores, materias, salones, estudiantes, horarios } = require('./data');
+const { loadState, saveState } = require('./persistence');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const ADMIN_USER = 'admin';
-const ADMIN_PASSWORD = 'Admin2026*';
-const ADMIN_TOKEN = 'academic-pulse-admin-token';
-const allowedOrigins = new Set([
+const PORT = Number(process.env.PORT) || 3000;
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin2026*';
+const JWT_SECRET = process.env.JWT_SECRET || 'development-only-change-me';
+const configuredOrigins = process.env.CLIENT_ORIGIN || [
+  'http://localhost:5500',
   'https://elyon-yireh-app.vercel.app',
   'https://elyon-yireh-dczd449bo-diego-ortega1.vercel.app',
   'https://elyon-yireh-o4mdbt4on-diego-ortega1.vercel.app'
-]);
+].join(',');
+const allowedOrigins = new Set(configuredOrigins.split(',').map((origin) => origin.trim()).filter(Boolean));
 
+app.use(helmet());
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.has(origin)) return callback(null, true);
@@ -20,6 +29,8 @@ app.use(cors({
   }
 }));
 app.use(express.json());
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: 'draft-7', legacyHeaders: false }));
+const loginRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, message: { success: false, message: 'Demasiados intentos de inicio de sesión' } });
 
 function normalizeText(value) {
   return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -38,10 +49,13 @@ function getSalonById(id) {
 }
 
 function requireAdmin(req, res, next) {
-  const token = String(req.headers.authorization || '').replace('Bearer ', '');
+  const authorization = String(req.headers.authorization || '');
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
 
-  if (token !== ADMIN_TOKEN) {
-    return res.status(401).json({ success: false, message: 'Se requiere una sesión de administrador' });
+  try {
+    req.admin = jwt.verify(token, JWT_SECRET);
+  } catch {
+    return res.status(401).json({ success: false, message: 'Token de administrador inválido o expirado' });
   }
 
   return next();
@@ -56,6 +70,14 @@ function hydrateSchedule(item) {
   };
 }
 
+async function safeSaveState(state) {
+  try {
+    await saveState(state);
+  } catch (error) {
+    console.warn('No se pudo guardar en PostgreSQL; se mantienen los datos en memoria:', error.message);
+  }
+}
+
 app.get('/', (req, res) => {
   res.json({ status: 'ok', service: 'academic-schedule-api' });
 });
@@ -68,21 +90,22 @@ app.get('/api/v1/health', (req, res) => {
   });
 });
 
-app.post('/api/v1/admin/login', (req, res) => {
+app.post('/api/v1/admin/login', loginRateLimit, (req, res) => {
   const { username, password } = req.body || {};
 
   if (username !== ADMIN_USER || password !== ADMIN_PASSWORD) {
     return res.status(401).json({ success: false, message: 'Usuario o contraseña incorrectos' });
   }
 
-  return res.json({ success: true, token: ADMIN_TOKEN, user: { username: ADMIN_USER, role: 'admin' } });
+  const token = jwt.sign({ username: ADMIN_USER, role: 'admin' }, JWT_SECRET, { expiresIn: '8h' });
+  return res.json({ success: true, token, user: { username: ADMIN_USER, role: 'admin' } });
 });
 
 app.get('/api/v1/admin/horarios', requireAdmin, (req, res) => {
   return res.json({ success: true, data: horarios.map(hydrateSchedule) });
 });
 
-app.post('/api/v1/admin/horarios', requireAdmin, (req, res) => {
+app.post('/api/v1/admin/horarios', requireAdmin, async (req, res, next) => {
   const { carrera, semestre, salonId, profesorId, materiaId, fecha, horaInicio, horaFin, modalidad } = req.body || {};
 
   if (!carrera || !semestre || !salonId || !profesorId || !materiaId || !fecha || !horaInicio || !horaFin || !modalidad) {
@@ -110,10 +133,11 @@ app.post('/api/v1/admin/horarios', requireAdmin, (req, res) => {
   };
 
   horarios.push(schedule);
+  await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
   return res.status(201).json({ success: true, data: hydrateSchedule(schedule) });
 });
 
-app.patch('/api/v1/admin/horarios/:id', requireAdmin, (req, res) => {
+app.patch('/api/v1/admin/horarios/:id', requireAdmin, async (req, res, next) => {
   const schedule = horarios.find((item) => item.id === req.params.id);
 
   if (!schedule) {
@@ -125,19 +149,21 @@ app.patch('/api/v1/admin/horarios/:id', requireAdmin, (req, res) => {
     if (Object.prototype.hasOwnProperty.call(req.body, field)) schedule[field] = req.body[field];
   });
 
+  await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
   return res.json({ success: true, data: hydrateSchedule(schedule) });
 });
 
-app.delete('/api/v1/admin/horarios/:id', requireAdmin, (req, res) => {
+app.delete('/api/v1/admin/horarios/:id', requireAdmin, async (req, res, next) => {
   const scheduleIndex = horarios.findIndex((item) => item.id === req.params.id);
 
   if (scheduleIndex === -1) return res.status(404).json({ success: false, message: 'Horario no encontrado' });
 
   horarios.splice(scheduleIndex, 1);
+  await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
   return res.json({ success: true, message: 'Horario eliminado' });
 });
 
-app.patch('/api/v1/admin/profesores/:id', requireAdmin, (req, res) => {
+app.patch('/api/v1/admin/profesores/:id', requireAdmin, async (req, res, next) => {
   const professor = getProfesorById(req.params.id);
 
   if (!professor) return res.status(404).json({ success: false, message: 'Profesor no encontrado' });
@@ -146,7 +172,20 @@ app.patch('/api/v1/admin/profesores/:id', requireAdmin, (req, res) => {
     if (typeof req.body[field] === 'string') professor[field] = req.body[field].trim();
   });
 
+  await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
   return res.json({ success: true, data: professor });
+});
+
+app.patch('/api/v1/admin/materias/:id', requireAdmin, async (req, res, next) => {
+  const subject = getMateriaById(req.params.id);
+  if (!subject) return res.status(404).json({ success: false, message: 'Materia no encontrada' });
+
+  ['nombre', 'codigo', 'programa', 'departamento'].forEach((field) => {
+    if (typeof req.body[field] === 'string') subject[field] = req.body[field].trim();
+  });
+
+  await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
+  return res.json({ success: true, data: subject });
 });
 
 app.get('/api/v1/profesores', (req, res) => {
@@ -218,7 +257,11 @@ app.get('/api/v1/horarios', (req, res) => {
 });
 
 app.get('/api/v1/buscar', (req, res) => {
-  const q = normalizeText(req.query.q || '');
+  const rawQuery = String(req.query.q || '').trim();
+  if (rawQuery.length > 80 || !/^[\p{L}\p{N}\s._-]*$/u.test(rawQuery)) {
+    return res.status(400).json({ success: false, message: 'La búsqueda contiene caracteres no permitidos' });
+  }
+  const q = normalizeText(rawQuery);
 
   if (!q) {
     return res.json({ success: true, data: [] });
@@ -283,6 +326,22 @@ app.get('/api/v1/estudiante/:id/horario', (req, res) => {
   return res.json({ success: true, data: { estudiante, horario: horarioPersonal } });
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ API académica ejecutándose en http://localhost:${PORT}`);
+async function start() {
+  try {
+    await loadState({ profesores, materias, salones, estudiantes, horarios });
+  } catch (error) {
+    console.warn('No se pudo cargar PostgreSQL; se usarán los datos en memoria:', error.message);
+  }
+  app.listen(PORT, () => console.log(`API académica ejecutándose en http://localhost:${PORT}`));
+}
+
+start().catch((error) => {
+  console.error('No se pudo iniciar la API:', error);
+  process.exit(1);
+});
+
+app.use((error, req, res, next) => {
+  if (res.headersSent) return next(error);
+  console.error(error);
+  return res.status(error.status || 500).json({ success: false, message: 'Error interno del servidor' });
 });
