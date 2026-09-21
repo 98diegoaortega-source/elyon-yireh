@@ -17,6 +17,7 @@ Aplicación web académica para consultar en qué materia, profesor, salón y ho
 cd "c:\Users\Calidad\Desktop\api mensaje"
 cd backend
 npm install
+copy .env.example .env
 ```
 
 3. Inicia el servidor:
@@ -60,3 +61,9 @@ En VS Code presiona F5 y usa la configuración de launch creada en `.vscode/laun
 ## Datos de ejemplo
 
 La app incluye profesores, materias, salones y horarios simulados listos para usarse en entorno demo.
+
+## Producción y persistencia
+
+El backend usa los arrays de `data.js` cuando no existe `DATABASE_URL`. Para conservar los cambios administrativos, configura `DATABASE_URL` con una base PostgreSQL o Supabase. Al iniciar por primera vez, el backend crea la tabla `academic_state` y carga los datos demo; las altas, ediciones y eliminaciones posteriores se guardan allí.
+
+Configura también `JWT_SECRET`, `ADMIN_USER`, `ADMIN_PASSWORD` y `CLIENT_ORIGIN` en `.env` o en las variables del proveedor de despliegue. `CLIENT_ORIGIN` acepta varios orígenes separados por comas.

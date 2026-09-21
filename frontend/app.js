@@ -39,26 +39,21 @@ const clearSearch = document.getElementById('clearSearch');
 const resultCount = document.getElementById('resultCount');
 let adminToken = sessionStorage.getItem('academic_admin_token') || '';
 
-async function fetchJson(url) {
+async function fetchJson(url, options = {}) {
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, options);
+    const contentType = response.headers.get('content-type') || '';
+    const result = contentType.includes('application/json') ? await response.json() : null;
 
     if (!response.ok) {
-      const contentType = response.headers.get('content-type') || '';
-      const message = contentType.includes('application/json')
-        ? (await response.json()).message
-        : `Error HTTP ${response.status}`;
-
-      throw new Error(message || 'Error de carga');
+      throw new Error(result?.message || `Error HTTP ${response.status}`);
     }
-
-    const contentType = response.headers.get('content-type') || '';
 
     if (!contentType.includes('application/json')) {
       throw new Error('El servidor no devolvió una respuesta JSON válida');
     }
 
-    return await response.json();
+    return result;
   } catch (error) {
     console.error(`Error consultando ${url}:`, error);
     throw error;
@@ -369,13 +364,11 @@ function adminHeaders() {
 }
 
 async function adminLoginRequest() {
-  const response = await fetch('/api/v1/admin/login', {
+  const result = await fetchJson(`${API_BASE_URL}/api/v1/admin/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: document.getElementById('adminUsername').value, password: document.getElementById('adminPassword').value })
   });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.message);
   adminToken = result.token;
   sessionStorage.setItem('academic_admin_token', adminToken);
   await loadAdminEditor();
@@ -383,7 +376,7 @@ async function adminLoginRequest() {
 
 async function loadAdminEditor() {
   const [scheduleRes, teachersRes, roomsRes, subjectsRes] = await Promise.all([
-    fetch('/api/v1/admin/horarios', { headers: adminHeaders() }).then((response) => response.json()),
+    fetchJson(`${API_BASE_URL}/api/v1/admin/horarios`, { headers: adminHeaders() }),
     fetchJson(`${API_BASE_URL}/api/v1/profesores`),
     fetchJson(`${API_BASE_URL}/api/v1/salones`),
     fetchJson(`${API_BASE_URL}/api/v1/materias`)
@@ -422,8 +415,7 @@ async function saveAdminRow(event) {
   const form = event.currentTarget;
   const payload = Object.fromEntries(new FormData(form).entries());
   const status = form.querySelector('.admin-status');
-  const response = await fetch(`/api/v1/admin/horarios/${form.dataset.id}`, { method: 'PATCH', headers: adminHeaders(), body: JSON.stringify(payload) });
-  const result = await response.json();
+  const result = await fetchJson(`${API_BASE_URL}/api/v1/admin/horarios/${form.dataset.id}`, { method: 'PATCH', headers: adminHeaders(), body: JSON.stringify(payload) });
   status.textContent = result.success ? 'Cambios guardados' : result.message;
   status.className = `admin-status md:col-span-6 text-sm ${result.success ? 'text-emerald-600' : 'text-rose-600'}`;
   if (result.success) loadData();
@@ -431,9 +423,7 @@ async function saveAdminRow(event) {
 
 async function deleteAdminRow(form) {
   if (!confirm('¿Eliminar este horario?')) return;
-  const response = await fetch(`/api/v1/admin/horarios/${form.dataset.id}`, { method: 'DELETE', headers: adminHeaders() });
-  const result = await response.json();
-  if (!result.success) return alert(result.message);
+  const result = await fetchJson(`${API_BASE_URL}/api/v1/admin/horarios/${form.dataset.id}`, { method: 'DELETE', headers: adminHeaders() });
   await loadAdminEditor();
   await loadData();
 }
@@ -441,8 +431,7 @@ async function deleteAdminRow(form) {
 async function createAdminRow(event) {
   event.preventDefault();
   const payload = Object.fromEntries(new FormData(createScheduleForm).entries());
-  const response = await fetch('/api/v1/admin/horarios', { method: 'POST', headers: adminHeaders(), body: JSON.stringify(payload) });
-  const result = await response.json();
+  const result = await fetchJson(`${API_BASE_URL}/api/v1/admin/horarios`, { method: 'POST', headers: adminHeaders(), body: JSON.stringify(payload) });
   createScheduleMessage.textContent = result.success ? 'Horario creado correctamente.' : result.message;
   createScheduleMessage.className = `text-sm md:col-span-6 ${result.success ? 'text-emerald-600' : 'text-rose-600'}`;
   if (result.success) {
@@ -516,9 +505,7 @@ document.querySelectorAll('.bottom-nav-item').forEach((button) => {
 
 myScheduleBtn.addEventListener('click', async () => {
   try {
-    const response = await fetch(`/api/v1/estudiante/${state.studentId}/horario`);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'No se pudo cargar el horario');
+    const data = await fetchJson(`${API_BASE_URL}/api/v1/estudiante/${state.studentId}/horario`);
 
     state.allSchedule = data.data.horario || [];
     render();
