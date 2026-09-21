@@ -11,7 +11,7 @@ const { loadState, saveState } = require('./persistence');
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin2026*';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin2026';
 const JWT_SECRET = process.env.JWT_SECRET || 'development-only-change-me';
 const configuredOrigins = process.env.CLIENT_ORIGIN || [
   'http://localhost:5500',
