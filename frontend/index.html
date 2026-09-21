@@ -180,7 +180,7 @@
       </div>
     </div>
 
-    <script src="./app.js"></script>
+    <script src="./app.js?v=3"></script>
     <script>
       function forceFrontendUpdate() {
         if ('serviceWorker' in navigator) {
@@ -203,7 +203,7 @@
 
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js').catch((error) => {
+          navigator.serviceWorker.register('/service-worker.js?v=3').catch((error) => {
             console.error('No se pudo registrar el Service Worker:', error);
           });
         });
