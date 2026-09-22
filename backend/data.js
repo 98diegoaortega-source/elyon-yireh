@@ -365,6 +365,16 @@ filasCorte5.forEach(([salon, carrera, materia, semestre, profesor, horaInicio, h
   });
 });
 
+function normalizeScheduleDays(schedule) {
+  schedule.forEach((item) => {
+    const subjectName = materiasImagen.find((subject) => subject.id === item.materiaId)?.nombre || '';
+    item.dia = /\bsabados?\b/i.test(subjectName) ? 'Sábado' : 'Por definir';
+  });
+}
+
+normalizeScheduleDays(horarios);
+normalizeScheduleDays(horariosImagen);
+
 module.exports = {
   profesores: profesoresImagen,
   materias: materiasImagen,
