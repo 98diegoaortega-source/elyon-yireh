@@ -15,7 +15,7 @@
     <meta property="og:image" content="/icons/icon-512x512.png" />
     <title>Academic Pulse</title>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link rel="stylesheet" href="./styles.css?v=3" />
+    <link rel="stylesheet" href="./styles.css?v=4" />
   </head>
   <body class="min-h-screen antialiased">
     <div id="pwaSplash" class="pwa-splash" aria-hidden="true">
@@ -228,10 +228,16 @@
         <h2 id="aboutTitle">ELYON YIREH</h2>
         <p class="about-subtitle">Buscador académico - Proyecto Universitario</p>
         <p>Aplicación web progresiva para consultar horarios y profesores universitarios.</p>
-        <p><strong>Tecnologías:</strong> HTML, CSS, JavaScript, Node.js, Express, PostgreSQL, Vercel, Railway</p>
-        <div id="aboutStats" class="about-stats">Cargando estadísticas...</div>
-        <p><strong>Autor:</strong> Diego Ortega</p>
-        <p><strong>Año:</strong> 2026</p>
+        <div class="about-help">
+          <h3>¿Cómo usar ELYON YIREH?</h3>
+          <ol>
+            <li>Escribe el nombre del profesor o programa en el buscador.</li>
+            <li>Los resultados aparecerán al instante.</li>
+            <li>Guarda tus horarios favoritos con la estrella ⭐.</li>
+            <li>Comparte con tus compañeros por WhatsApp.</li>
+          </ol>
+          <p>Si necesitas ayuda, usa el chatbot 🤖 en la esquina inferior derecha.</p>
+        </div>
         <button id="closeAboutFooter" class="about-footer-button" type="button">Cerrar</button>
       </div>
     </div>
@@ -243,7 +249,7 @@
       <form id="chatForm" class="chat-form"><input id="chatInput" maxlength="160" placeholder="¿A qué hora enseña...?" autocomplete="off" /><button type="submit" aria-label="Enviar pregunta"><i class="ph ph-paper-plane-tilt"></i></button></form>
     </aside>
 
-    <script src="./app.js?v=3"></script>
+    <script src="./app.js?v=4"></script>
     <script>
       function forceFrontendUpdate() {
         if ('serviceWorker' in navigator) {
@@ -266,7 +272,7 @@
 
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js?v=3').catch((error) => {
+          navigator.serviceWorker.register('/service-worker.js?v=4').catch((error) => {
             console.error('No se pudo registrar el Service Worker:', error);
           });
         });

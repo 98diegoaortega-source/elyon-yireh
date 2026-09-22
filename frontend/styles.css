@@ -676,3 +676,34 @@ button {
 .analytics-total { display: block; color: #087443; font-size: 64px; text-align: center; }
 @media (max-width: 720px) { .admin-dashboard { padding: 12px; } .admin-dashboard-header { align-items: flex-start; flex-direction: column; } .admin-chart-grid { grid-template-columns: 1fr; } .admin-chart-wide { grid-column: auto; } }
 @media (max-width: 720px) { .admin-analytics-summary { grid-template-columns: 1fr; } }
+
+.about-help {
+  text-align: left;
+  margin: 20px 0;
+  padding: 15px 20px;
+  background: #f8fafc;
+  border-left: 4px solid #087443;
+  border-radius: 8px;
+}
+.about-help h3 {
+  color: #087443;
+  font-size: 16px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+.about-help ol {
+  padding-left: 20px;
+  margin: 10px 0;
+}
+.about-help li {
+  margin: 6px 0;
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.5;
+}
+.about-help p {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #64748b;
+  font-style: italic;
+}

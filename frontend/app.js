@@ -60,7 +60,6 @@ const aboutButton = document.getElementById('aboutButton');
 const aboutModal = document.getElementById('aboutModal');
 const closeAboutButton = document.getElementById('closeAboutButton');
 const closeAboutFooter = document.getElementById('closeAboutFooter');
-const aboutStats = document.getElementById('aboutStats');
 let deferredInstallPrompt;
 const HISTORY_KEY = 'elyon-yireh-search-history';
 const FAVORITES_KEY = 'elyon_favorites';
@@ -194,12 +193,6 @@ function addToGoogleCalendar(itemId) {
 
 async function openAbout() {
   aboutModal.classList.remove('hidden');
-  try {
-    const stats = await fetchJson(`${API_BASE_URL}/api/v1/estadisticas`);
-    aboutStats.textContent = `${stats.profesores} profesores · ${stats.horarios} horarios · ${stats.programas} programas`;
-  } catch {
-    aboutStats.textContent = 'Estadísticas no disponibles';
-  }
 }
 
 function closeAbout() {
