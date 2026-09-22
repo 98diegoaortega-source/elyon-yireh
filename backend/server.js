@@ -43,6 +43,35 @@ function normalizeText(value) {
   return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
+function normalizeTime(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/a\s*\.\s*m\.?/g, 'am')
+    .replace(/p\s*\.\s*m\.?/g, 'pm')
+    .replace(/(\d{1,2})\.(\d{2})/g, '$1:$2')
+    .replace(/\s*:\s*/g, ':')
+    .replace(/\b(\d):(?=\d{2})/g, '0$1:')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function matchesTimeQuery(query, schedule) {
+  const normalizedQuery = normalizeTime(query).replace(/\s*(am|pm)\b/g, '');
+  const normalizedSchedule = normalizeTime(schedule).replace(/\s*(am|pm)\b/g, '');
+  const queryMatch = normalizedQuery.match(/^(\d{1,2})(?::(\d{2}))?$/);
+
+  if (!queryMatch) return false;
+
+  const hour = String(Number(queryMatch[1])).padStart(2, '0');
+  if (!queryMatch[2]) return new RegExp(`(?:^|[^\\d])${hour}:\\d{2}(?:$|[^\\d])`).test(normalizedSchedule);
+
+  return normalizedSchedule.includes(`${hour}:${queryMatch[2]}`);
+}
+
+function isTimeQuery(value) {
+  return /^\d{1,2}(?::\d{2})?(?:\s*(?:am|pm))?$/i.test(normalizeTime(value).replace(/\s*(am|pm)\b/g, ''));
+}
+
 function getMateriaById(id) {
   return materias.find((materia) => materia.id === id) || null;
 }
@@ -443,10 +472,11 @@ app.get('/api/v1/horarios', scheduleCacheMiddleware, (req, res) => {
 
 app.get('/api/v1/buscar', (req, res) => {
   const rawQuery = String(req.query.q || '').trim();
-  if (rawQuery.length > 80 || !/^[\p{L}\p{N}\s._-]*$/u.test(rawQuery)) {
+  if (rawQuery.length > 80 || !/^[\p{L}\p{N}\s:._-]*$/u.test(rawQuery)) {
     return res.status(400).json({ success: false, message: 'La búsqueda contiene caracteres no permitidos' });
   }
   const q = normalizeText(rawQuery);
+  const timeQuery = isTimeQuery(rawQuery);
 
   if (!q) {
     return res.json({ success: true, data: [] });
@@ -458,7 +488,9 @@ app.get('/api/v1/buscar', (req, res) => {
       const profesorInfo = getProfesorById(item.profesorId);
       const salonInfo = getSalonById(item.salonId);
 
-      const hayCoincidencia =
+      const hayCoincidencia = timeQuery
+        ? matchesTimeQuery(rawQuery, `${item.horaInicio} ${item.horaFin}`)
+        : (
         normalizeText(materiaInfo?.nombre).includes(q) ||
         normalizeText(materiaInfo?.programa).includes(q) ||
         normalizeText(profesorInfo?.nombre).includes(q) ||
@@ -469,7 +501,8 @@ app.get('/api/v1/buscar', (req, res) => {
         normalizeText(item.fecha).includes(q) ||
         normalizeText(item.dia).includes(q) ||
         normalizeText(item.horaInicio).includes(q) ||
-        normalizeText(item.horaFin).includes(q);
+        normalizeText(item.horaFin).includes(q)
+      );
 
       if (!hayCoincidencia) return null;
 

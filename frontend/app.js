@@ -1,5 +1,4 @@
 ﻿const API_BASE_URL = 'https://elyon-yireh-production.up.railway.app';
-const dayOrder = ['Corte 5'];
 
 const state = {
   allSchedule: [],
@@ -258,6 +257,31 @@ function normalize(value) {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
+function normalizeTime(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/a\s*\.\s*m\.?/g, 'am')
+    .replace(/p\s*\.\s*m\.?/g, 'pm')
+    .replace(/(\d{1,2})\.(\d{2})/g, '$1:$2')
+    .replace(/\s*:\s*/g, ':')
+    .replace(/\b(\d):(?=\d{2})/g, '0$1:')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function matchesTimeQuery(query, schedule) {
+  const normalizedQuery = normalizeTime(query).replace(/\s*(am|pm)\b/g, '');
+  const normalizedSchedule = normalizeTime(schedule).replace(/\s*(am|pm)\b/g, '');
+  const queryMatch = normalizedQuery.match(/^(\d{1,2})(?::(\d{2}))?$/);
+
+  if (!queryMatch) return false;
+
+  const hour = String(Number(queryMatch[1])).padStart(2, '0');
+  if (!queryMatch[2]) return new RegExp(`(?:^|[^\\d])${hour}:\\d{2}(?:$|[^\\d])`).test(normalizedSchedule);
+
+  return normalizedSchedule.includes(`${hour}:${queryMatch[2]}`);
+}
+
 function matchesSearch(item, query) {
   if (!query) return true;
 
@@ -291,24 +315,20 @@ function getFilteredSchedule() {
   const program = programSearch.value;
   const time = timeSearch.value;
   const date = dateSearch.value.trim();
-  const day = dayFilter?.value || '';
   const semester = semesterFilter?.value || '';
   const career = careerFilter?.value || '';
   const room = roomFilter?.value || '';
 
   return state.allSchedule.filter((item) => {
-    const matchesDay = !day || item.dia === day;
     const matchesSemester = !semester || item.semestre === semester;
     const matchesCareer = !career || item.carrera === career;
     const matchesRoom = !room || item.salon?.nombre === room;
     const matchesSearchValue = matchesSearch(item, search);
     const matchesProgram = !program || normalize(item.carrera).includes(normalize(program));
-    const requestedTimes = normalize(time).match(/\d{1,2}:\d{2}/g) || [];
-    const itemTimes = `${item.horaInicio} ${item.horaFin}`.match(/\d{2}:\d{2}/g) || [];
-    const matchesTime = !time || requestedTimes.every((requested) => itemTimes.some((available) => available.replace(/^0/, '') === requested.replace(/^0/, '')));
+    const matchesTime = !time || matchesTimeQuery(time, `${item.horaInicio} ${item.horaFin}`);
     const matchesDate = !date || normalize(item.fecha).includes(normalize(date));
 
-    return matchesDay && matchesSemester && matchesCareer && matchesRoom && matchesSearchValue && matchesProgram && matchesTime && matchesDate;
+    return matchesSemester && matchesCareer && matchesRoom && matchesSearchValue && matchesProgram && matchesTime && matchesDate;
   });
 }
 
@@ -357,7 +377,7 @@ function renderCards(items) {
         <article class="glass result-card rounded-3xl p-5">
           <div class="mb-4 flex items-start justify-between gap-3">
             <div class="rounded-2xl bg-gradient-to-br ${accentClass} p-3 text-sm font-bold text-white shadow-lg">
-              CORTE 5
+              ${item.corte || 'Horario'}
             </div>
             <div class="card-actions"><button class="favorite-star ${isFavorite(item.id) ? 'is-favorite' : ''}" type="button" data-favorite="${item.id}" aria-label="${isFavorite(item.id) ? 'Quitar favorito' : 'Agregar favorito'}">★</button><button class="rounded-full border border-slate-700 bg-slate-900/50 px-2.5 py-1 text-xs text-slate-300" data-open="${item.id}">${translations[currentLanguage].details}</button></div>
           </div>
@@ -379,6 +399,10 @@ function renderCards(items) {
           </div>
 
           <div class="space-y-2 text-sm text-slate-300">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-400">Día</span>
+              <strong class="text-right text-slate-900">${item.dia || 'Por confirmar'}</strong>
+            </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">Horario</span>
               <strong class="text-right text-slate-900">${item.horaInicio} - ${item.horaFin}</strong>
@@ -520,7 +544,8 @@ function renderTeachers() {
 }
 
 function renderCalendar(items) {
-  const days = dayOrder.map((day) => ({ day, items: items.filter((item) => item.dia === day) }));
+  const days = [...new Set(items.map((item) => item.dia).filter(Boolean))]
+    .map((day) => ({ day, items: items.filter((item) => item.dia === day) }));
 
   calendarContainer.innerHTML = days
     .map((dayData) => {
@@ -578,7 +603,7 @@ function buildModalContent(item) {
       <div class="grid gap-3 md:grid-cols-2">
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
           <div class="text-[10px] uppercase tracking-[0.18em] text-slate-400">Día y horario</div>
-          <div class="mt-2 font-semibold text-slate-900">${item.horaInicio} - ${item.horaFin}</div>
+          <div class="mt-2 font-semibold text-slate-900">${item.dia || 'Día por confirmar'} · ${item.horaInicio} - ${item.horaFin}</div>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
           <div class="text-[10px] uppercase tracking-[0.18em] text-slate-400">Salón</div>
