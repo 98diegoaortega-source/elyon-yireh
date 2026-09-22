@@ -366,9 +366,21 @@ filasCorte5.forEach(([salon, carrera, materia, semestre, profesor, horaInicio, h
 });
 
 function normalizeScheduleDays(schedule) {
+  const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  let rangeIndex = 0;
+
   schedule.forEach((item) => {
     const subjectName = materiasImagen.find((subject) => subject.id === item.materiaId)?.nombre || '';
-    item.dia = /\bsabados?\b/i.test(subjectName) ? 'Sábado' : 'Por definir';
+    const materia = subjectName.toUpperCase();
+
+    if (/SÁBADO|SABADO/.test(materia)) {
+      item.dia = 'Sábado';
+    } else if (String(item.fecha || '').includes('07 de septiembre')) {
+      item.dia = 'Lunes';
+    } else {
+      item.dia = diasSemana[rangeIndex % diasSemana.length];
+      rangeIndex += 1;
+    }
   });
 }
 
