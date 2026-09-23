@@ -512,15 +512,44 @@ function renderCorte6() {
     const inicio = item.fechas?.[0]?.fecha || 'Sin fecha';
     const fin = item.fechas?.at(-1)?.fecha || inicio;
     const cantidadFechas = item.fechas?.length || 0;
-    return `<article class="corte6-row ${item.revisar ? 'revisar' : ''}">
-      <strong>${item.aula}</strong>
-      <span>${item.programa}</span>
-      <span>${item.semestre}</span>
-      <span>${item.modulo || 'Sin módulo'}</span>
-      <span>${item.docente || 'Sin docente'}</span>
-      <span>${item.horaInicio}-${item.horaFin}</span>
-      <span>${item.estudiantes}</span>
-      <span>${inicio} → ${fin} (${cantidadFechas} días)</span>
+    return `<article class="glass result-card rounded-3xl p-5 ${item.revisar ? 'revisar' : ''}">
+      <div class="mb-4 flex items-start justify-between gap-3">
+        <div class="rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 p-3 text-sm font-bold text-white shadow-lg">
+          Aula ${item.aula || 'Por asignar'}
+        </div>
+        <div class="card-actions">
+          <span class="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200">${item.corte || 'Corte 6'}</span>
+        </div>
+      </div>
+
+      <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-cyan-200">
+        <i class="ph ph-books"></i> ${item.programa || 'Programa'}
+      </div>
+      <h3 class="mb-1 text-xl font-semibold text-slate-900">${item.modulo || item.codigo || 'Sin módulo'}</h3>
+      <p class="mb-3 text-sm text-slate-400">${item.semestre || 'Semestre'} · ${item.modalidad || 'Presencial'}</p>
+
+      <div class="mb-4 flex items-center gap-3">
+        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-indigo-500 text-sm font-bold text-white">${(item.docente || 'SD').split(' ').map((part) => part[0]).join('').slice(0, 2)}</div>
+        <div>
+          <p class="font-medium text-slate-900">${item.docente || 'Sin docente'}</p>
+          <p class="text-xs text-slate-400">${item.codigo || 'Sin código'}</p>
+        </div>
+      </div>
+
+      <div class="space-y-2 text-sm text-slate-300">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-slate-400">Horario</span>
+          <strong class="text-right text-slate-900">${item.horaInicio}-${item.horaFin}${item.estudiantes > 0 ? ` · ${item.estudiantes} estudiantes` : ''}</strong>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-slate-400">Día</span>
+          <strong class="text-right text-slate-900">${getScheduleDaysText(item) || 'Por confirmar'}</strong>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-slate-400">Rango</span>
+          <strong class="text-right text-slate-900">${inicio} → ${fin} (${cantidadFechas} días)</strong>
+        </div>
+      </div>
     </article>`;
   }).join('');
 
