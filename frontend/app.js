@@ -4,8 +4,11 @@ const state = {
   allSchedule: [],
   allTeachers: [],
   selectedView: 'tarjetas',
+  selectedSchedule: 'corte6',
   studentId: 'est-101'
 };
+
+let horariosCorte6 = [];
 
 const searchInput = document.getElementById('searchInput');
 const dayFilter = document.getElementById('dayFilter');
@@ -68,6 +71,10 @@ const translations = {
   es: { favorites: 'Mis favoritos', clearFavorites: 'Limpiar favoritos', searcher: 'Buscador', clear: 'Limpiar', teacherOrQuery: 'Profesor o consulta', program: 'Programa', schedule: 'Horario', date: 'Fecha o periodo', search: 'Buscar', results: 'Resultados', details: 'Ver detalles', addCalendar: 'Añadir a Calendar', share: 'Compartir' },
   en: { favorites: 'My favorites', clearFavorites: 'Clear favorites', searcher: 'Search', clear: 'Clear', teacherOrQuery: 'Teacher or query', program: 'Program', schedule: 'Schedule', date: 'Date or period', search: 'Search', results: 'Results', details: 'View details', addCalendar: 'Add to Calendar', share: 'Share' }
 };
+
+const revisarStyles = document.createElement('style');
+revisarStyles.textContent = '.revisar { background: #fff3cd; }';
+document.head.appendChild(revisarStyles);
 let adminToken = sessionStorage.getItem('academic_admin_token') || '';
 let searchDebounce;
 let isLoading = false;
@@ -121,6 +128,22 @@ async function loadData() {
   } finally {
     clearTimeout(slowMessage);
     setLoading(false);
+  }
+}
+
+async function cargarCorte6() {
+  try {
+    const result = await fetchJson(`${API_BASE_URL}/api/v1/horarios-corte6`);
+    if (result.ok !== true || !Array.isArray(result.data)) {
+      throw new Error('La respuesta de Corte 6 no tiene el formato esperado');
+    }
+    horariosCorte6 = result.data;
+    if (state.selectedSchedule === 'corte6') renderCorte6();
+  } catch (error) {
+    console.error('Error cargando Corte 6:', error);
+    if (state.selectedSchedule === 'corte6') {
+      cardsContainer.innerHTML = '<div class="glass rounded-3xl p-6 text-rose-600">No se pudo cargar el Corte 6.</div>';
+    }
   }
 }
 
@@ -336,16 +359,23 @@ function renderCards(items) {
   const query = searchInput.value.trim();
   const hasSearch = Boolean(query || programSearch.value.trim() || timeSearch.value.trim() || dateSearch.value.trim());
 
+  const tabs = `
+    <div class="schedule-tabs col-span-full mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Cortes académicos">
+      <button type="button" class="schedule-tab ${state.selectedSchedule === 'corte5' ? 'active' : ''}" data-schedule-tab="corte5">Corte 5 (109)</button>
+      <button type="button" class="schedule-tab ${state.selectedSchedule === 'corte6' ? 'active' : ''}" data-schedule-tab="corte6">Corte 6 (${horariosCorte6.length || 26})</button>
+    </div>`;
+
   if (!hasSearch) {
     resultCount.textContent = '';
     calendarButton.classList.add('hidden');
-    cardsContainer.innerHTML = `
+    cardsContainer.innerHTML = `${tabs}
       <div class="rounded-3xl border border-dashed border-blue-200 bg-blue-50/60 p-10 text-center">
         <i class="ph ph-magnifying-glass mb-3 text-4xl text-blue-500"></i>
         <h3 class="text-lg font-bold text-slate-900">¿Qué deseas consultar?</h3>
         <p class="mt-2 text-sm text-slate-500">Escribe un programa, docente, salón, horario o fecha para ver los resultados.</p>
       </div>
     `;
+    bindScheduleTabs();
     return;
   }
 
@@ -354,7 +384,7 @@ function renderCards(items) {
 
   if (!items.length) {
     calendarButton.classList.add('hidden');
-    cardsContainer.innerHTML = `
+    cardsContainer.innerHTML = `${tabs}
       <div class="glass col-span-full rounded-3xl p-12 text-center">
         <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 text-cyan-300">
           <i class="ph ph-magnifying-glass text-4xl"></i>
@@ -363,10 +393,11 @@ function renderCards(items) {
         <p class="mt-2 text-sm text-slate-500">Prueba con otro programa, docente, semestre o salón.</p>
       </div>
     `;
+    bindScheduleTabs();
     return;
   }
 
-  cardsContainer.innerHTML = `
+  cardsContainer.innerHTML = `${tabs}
     ${query ? `<div class="col-span-full mb-1 text-sm text-slate-500"><strong class="text-slate-900">${items.length}</strong> resultado(s) para <strong class="text-blue-600">${query}</strong></div>` : ''}
     ${items
     .map((item) => {
@@ -443,6 +474,46 @@ function renderCards(items) {
   cardsContainer.querySelectorAll('[data-calendar]').forEach((button) => {
     button.addEventListener('click', () => addToGoogleCalendar(button.dataset.calendar));
   });
+  bindScheduleTabs();
+}
+
+function bindScheduleTabs() {
+  cardsContainer.querySelectorAll('[data-schedule-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.selectedSchedule = button.dataset.scheduleTab;
+      if (state.selectedSchedule === 'corte6') {
+        renderCorte6();
+      } else {
+        render();
+      }
+    });
+  });
+}
+
+function renderCorte6() {
+  const tabs = `
+    <div class="schedule-tabs col-span-full mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Cortes académicos">
+      <button type="button" class="schedule-tab" data-schedule-tab="corte5">Corte 5 (109)</button>
+      <button type="button" class="schedule-tab active" data-schedule-tab="corte6">Corte 6 (${horariosCorte6.length})</button>
+    </div>`;
+  const cards = horariosCorte6.map((item) => {
+    const inicio = item.fechas?.[0]?.fecha || 'Sin fecha';
+    const fin = item.fechas?.at(-1)?.fecha || inicio;
+    const cantidadFechas = item.fechas?.length || 0;
+    return `<article class="corte6-row ${item.revisar ? 'revisar' : ''}">
+      <strong>${item.aula}</strong>
+      <span>${item.programa}</span>
+      <span>${item.semestre}</span>
+      <span>${item.modulo || 'Sin módulo'}</span>
+      <span>${item.docente || 'Sin docente'}</span>
+      <span>${item.horaInicio}-${item.horaFin}</span>
+      <span>${item.estudiantes}</span>
+      <span>${inicio} → ${fin} (${cantidadFechas} días)</span>
+    </article>`;
+  }).join('');
+
+  cardsContainer.innerHTML = `${tabs}${cards || '<div class="glass rounded-3xl p-6">No hay registros de Corte 6.</div>'}`;
+  bindScheduleTabs();
 }
 
 function shareSchedule(itemId) {
@@ -576,6 +647,10 @@ function renderCalendar(items) {
 }
 
 function render() {
+  if (state.selectedSchedule === 'corte6') {
+    renderCorte6();
+    return;
+  }
   const filtered = getFilteredSchedule();
   renderCards(filtered);
   renderCalendar(filtered);
@@ -872,6 +947,7 @@ loadData().catch((error) => {
   cardsContainer.innerHTML = '<div class="glass rounded-3xl p-6 text-rose-600">No se pudo conectar con el servidor. Verifica tu conexión a internet.</div>';
   forceRefreshButton.classList.remove('hidden');
 });
+cargarCorte6();
 
 if (pwaSplash && window.matchMedia('(display-mode: standalone)').matches) {
   setTimeout(() => pwaSplash.classList.add('is-hidden'), 1500);
