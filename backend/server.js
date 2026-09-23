@@ -8,7 +8,7 @@ const compression = require('compression');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
-const { profesores, materias, salones, estudiantes, horarios } = require('./data');
+const { profesores, materias, salones, estudiantes, horarios, horariosCorte6 } = require('./data');
 const { loadState, saveState, trackAnalytics, getTopAnalytics, getTotalAnalyticsToday, getAcademicState } = require('./persistence');
 
 const app = express();
@@ -467,7 +467,23 @@ app.get('/api/v1/horarios', scheduleCacheMiddleware, (req, res) => {
     };
   });
 
-  return res.json({ success: true, data: response });
+  return res.json({ success: true, ok: true, data: response });
+});
+
+app.get('/api/v1/horarios-corte6', (req, res) => {
+  try {
+    if (String(req.query.expandir || '') === '1') {
+      const data = horariosCorte6.flatMap((horario) => horario.fechas.map(({ fecha, dia }) => {
+        const { fechas, ...resto } = horario;
+        return { ...resto, fecha, dia };
+      }));
+      return res.json({ success: true, ok: true, data });
+    }
+
+    return res.json({ success: true, ok: true, data: horariosCorte6 });
+  } catch (error) {
+    return res.status(500).json({ success: false, ok: false, error: error.message });
+  }
 });
 
 app.get('/api/v1/buscar', (req, res) => {

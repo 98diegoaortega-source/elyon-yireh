@@ -60,34 +60,6 @@ const estudiantes = [
   { id: 'est-001', nombre: 'Estudiante demo', carrera: 'Todos los programas', semestre: 'Corte 4' }
 ];
 
-const horarios = [
-  { id: 'hor-1', materiaId: 'mat-1', profesorId: 'prof-1', salonId: 'salon-1', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Naviera-Logística-Comercio', semestre: '2 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-2', materiaId: 'mat-2', profesorId: 'prof-2', salonId: 'salon-2', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Naviera-Logística-Comercio', semestre: '3 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-3', materiaId: 'mat-3', profesorId: 'prof-2', salonId: 'salon-2', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Naviera-Logística-Comercio', semestre: '4 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-4', materiaId: 'mat-4', profesorId: 'prof-3', salonId: 'salon-3', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Primera Infancia', semestre: '2 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-5', materiaId: 'mat-5', profesorId: 'prof-4', salonId: 'salon-4', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Primera Infancia', semestre: '3 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-6', materiaId: 'mat-6', profesorId: 'prof-5', salonId: 'salon-5', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Primera Infancia', semestre: '4 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-7', materiaId: 'mat-7', profesorId: 'prof-6', salonId: 'salon-6', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Hotelería-Recepción', semestre: '1 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-8', materiaId: 'mat-8', profesorId: 'prof-7', salonId: 'salon-7', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Hotelería-Recepción', semestre: '2 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-9', materiaId: 'mat-9', profesorId: 'prof-8', salonId: 'salon-8', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Hotelería-Recepción', semestre: '3 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-10', materiaId: 'mat-9', profesorId: 'prof-8', salonId: 'salon-8', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Hotelería-Recepción', semestre: '4 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-11', materiaId: 'mat-7', profesorId: 'prof-6', salonId: 'salon-6', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Aux vuelo', semestre: '1 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-12', materiaId: 'mat-8', profesorId: 'prof-7', salonId: 'salon-7', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Aux vuelo', semestre: '2 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-13', materiaId: 'mat-8', profesorId: 'prof-7', salonId: 'salon-9', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Aux vuelo', semestre: '3 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-14', materiaId: 'mat-10', profesorId: 'prof-16', salonId: 'salon-10', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Cocina nac e inter', semestre: '2 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-15', materiaId: 'mat-10', profesorId: 'prof-16', salonId: 'salon-10', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Cocina nac e inter', semestre: '3 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-16', materiaId: 'mat-10', profesorId: 'prof-16', salonId: 'salon-10', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Cocina nac e inter', semestre: '4 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-17', materiaId: 'mat-11', profesorId: 'prof-9', salonId: 'salon-11', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Diseño y confección', semestre: '1 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-18', materiaId: 'mat-12', profesorId: 'prof-10', salonId: 'salon-12', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Diseño y confección', semestre: '2 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-19', materiaId: 'mat-13', profesorId: 'prof-11', salonId: 'salon-13', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Diseño gráfico', semestre: '1 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-20', materiaId: 'mat-13', profesorId: 'prof-11', salonId: 'salon-13', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Diseño gráfico', semestre: '2 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-21', materiaId: 'mat-14', profesorId: 'prof-12', salonId: 'salon-13', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Sistemas-Software', semestre: '2 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-22', materiaId: 'mat-15', profesorId: 'prof-13', salonId: 'salon-13', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Sistemas-Software', semestre: '4 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-23', materiaId: 'mat-16', profesorId: 'prof-14', salonId: 'salon-14', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Refrigeración', semestre: '2 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-24', materiaId: 'mat-17', profesorId: 'prof-15', salonId: 'salon-15', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Soldadura', semestre: '2 SEM', estudianteIds: ['est-001'] },
-  { id: 'hor-25', materiaId: 'mat-18', profesorId: 'prof-15', salonId: 'salon-15', dia: 'Corte 4', fecha: '05 al 19 de septiembre de 2026', horaInicio: '06:45', horaFin: '12:15', modalidad: 'Semipresencial', corte: 'MOD#4', carrera: 'Soldadura', semestre: '3 SEM', estudianteIds: ['est-001'] }
-];
-
 const profesoresImagen = [
   'MILLER ARZUZA',
   'HERNANDO LUIS GUZMAN ORTEGA',
@@ -384,13 +356,156 @@ function normalizeScheduleDays(schedule) {
   });
 }
 
-normalizeScheduleDays(horarios);
-normalizeScheduleDays(horariosImagen);
+const MESES = {
+  enero: 0,
+  febrero: 1,
+  marzo: 2,
+  abril: 3,
+  mayo: 4,
+  junio: 5,
+  julio: 6,
+  agosto: 7,
+  septiembre: 8,
+  octubre: 9,
+  noviembre: 10,
+  diciembre: 11
+};
+
+const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+function parseRangoFechas(texto) {
+  const textoNormalizado = String(texto || '').trim();
+  const meses = Object.keys(MESES).join('|');
+  const rango = textoNormalizado.match(new RegExp(`^(\\d{1,2})\\s+al\\s+(\\d{1,2})\\s+de\\s+(${meses})\\s+de\\s+(\\d{4})$`, 'i'));
+  const fechaConBloque = textoNormalizado.match(new RegExp(`^(\\d{1,2})\\s+de\\s+(${meses})\\s+de\\s+(\\d{4})\\s*([A-Za-z])$`, 'i'));
+  const rangoEntreMeses = textoNormalizado.match(new RegExp(`^(?:del\\s+)?(\\d{1,2})\\s+de\\s+(${meses})\\s+al\\s+(\\d{1,2})\\s+de\\s+(${meses})\\s+(?:de\\s+)?(\\d{4})$`, 'i'));
+
+  let diaInicio;
+  let diaFin;
+  let mesInicio;
+  let mesFin;
+  let anio;
+  let anioFin;
+  let bloque = null;
+
+  if (rango) {
+    diaInicio = Number(rango[1]);
+    diaFin = Number(rango[2]);
+    mesInicio = MESES[rango[3].toLowerCase()];
+    mesFin = mesInicio;
+    anio = Number(rango[4]);
+  } else if (fechaConBloque) {
+    diaInicio = Number(fechaConBloque[1]);
+    diaFin = diaInicio;
+    mesInicio = MESES[fechaConBloque[2].toLowerCase()];
+    mesFin = mesInicio;
+    anio = Number(fechaConBloque[3]);
+    anioFin = anio;
+    bloque = fechaConBloque[4].toUpperCase();
+  } else if (rangoEntreMeses) {
+    diaInicio = Number(rangoEntreMeses[1]);
+    mesInicio = MESES[rangoEntreMeses[2].toLowerCase()];
+    diaFin = Number(rangoEntreMeses[3]);
+    mesFin = MESES[rangoEntreMeses[4].toLowerCase()];
+    anio = Number(rangoEntreMeses[5]);
+    anioFin = mesFin < mesInicio ? anio + 1 : anio;
+  } else {
+    return { fechas: [], bloque: null };
+  }
+
+  if (anioFin === undefined) {
+    anioFin = anio;
+  }
+
+  const fechaInicio = new Date(anio, mesInicio, diaInicio);
+  const fechaFin = new Date(anioFin, mesFin, diaFin);
+  if (
+    fechaInicio.getFullYear() !== anio ||
+    fechaInicio.getMonth() !== mesInicio ||
+    fechaInicio.getDate() !== diaInicio ||
+    fechaFin.getFullYear() !== anioFin ||
+    fechaFin.getMonth() !== mesFin ||
+    fechaFin.getDate() !== diaFin ||
+    fechaFin < fechaInicio
+  ) {
+    return { fechas: [], bloque: null };
+  }
+
+  const fechas = [];
+  for (let fecha = fechaInicio; fecha <= fechaFin; fecha.setDate(fecha.getDate() + 1)) {
+    fechas.push({
+      fecha: `${String(fecha.getDate()).padStart(2, '0')}/${String(fecha.getMonth() + 1).padStart(2, '0')}/${fecha.getFullYear()}`,
+      dia: DIAS_SEMANA[fecha.getDay()]
+    });
+  }
+
+  return { fechas, bloque };
+}
+
+const horariosConFechas = horariosImagen.map((h) => {
+  const { fechas, bloque } = parseRangoFechas(h.fecha);
+  const { dia, rangoOriginal, ...resto } = h;
+  const limpio = { ...resto };
+  const basura = ['Por definir', 'Corte 4', 'Corte 5'];
+
+  if (dia && !basura.includes(dia)) {
+    limpio.diaOriginal = dia;
+  }
+
+  limpio.fecha = h.fecha;
+  if (bloque) {
+    limpio.bloque = bloque;
+  }
+  limpio.fechas = fechas;
+  return limpio;
+});
+
+const RANGO_C6 = 'del 23 de septiembre al 08 de octubre de 2026';
+const FECHAS_C6 = parseRangoFechas(RANGO_C6).fechas;
+
+const filasCorte6 = [
+  { aula: '3A', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'ENFERMERIA', semestre: '1 SEM', corte: 'MOD#7', codigo: 'E-GENHSA', modulo: 'GENERAR HÁBITOS SALUDABLES EN LOS AMBIENTES DE TRABAJO', docente: 'MARLLY LOPEZ', estudiantes: 15 },
+  { aula: '104', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'ENFERMERIA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-APNTAV', modulo: 'APLICAR NORMAS Y TÉCNICAS DEL AMBIENTE VITAL', docente: 'KATIA VALENCIA', estudiantes: 31 },
+  { aula: '601A', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'ENFERMERIA', semestre: '4 SEM', corte: 'MOD#7', codigo: 'E-CIMPRN', modulo: 'CUIDAR INTEGRALMENTE A LA MUJER EN EL POSTPARTO Y AL RECIÉN NACIDO', docente: 'ARIEL PUELLO', estudiantes: 28 },
+  { aula: '3A', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'FARMACIA', semestre: '3 SEM', corte: 'MOD#7', codigo: 'E-NPS', modulo: 'NEGOCIACIÓN DE PRODUCTOS Y SERVICIOS I', docente: 'ILILIANA MANRIQUE', estudiantes: 66 },
+  { aula: '02', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'NAVIERA-LOGISTICA-COMERCIO', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-REGCAM', modulo: 'REGIMEN CAMBIARIO', docente: 'LUCIA TERESA ELJACH MOSQUERA', estudiantes: 13 },
+  { aula: '02', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'NAVIERA-LOGISTICA-COMERCIO', semestre: '3 SEM', corte: 'MOD#7', codigo: 'E-ARANIA', modulo: 'ARANCEL I', docente: 'VILMA TORRES', estudiantes: 10 },
+  { aula: '01B', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'AUX VUELO', semestre: '1 SEM', corte: 'MOD#7', codigo: 'E-DESTUR', modulo: 'DESTINO TURÍSTICO', docente: 'YEISON YEPES', estudiantes: 3 },
+  { aula: '2D', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'COCINA NAC E INTER', semestre: '1 SEM', corte: 'MOD#7', codigo: 'E-COCFRIA', modulo: 'COCINA FRÍA I', docente: 'HORTENSIA HERRERA', estudiantes: 8 },
+  { aula: '03', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'INGLES TECNICO NIVELES', semestre: 'NIVEL 12', corte: 'MOD#7', codigo: '', modulo: '', docente: 'JOSE TARA', estudiantes: 13 },
+  { aula: '6F', horaInicio: '13:45', horaFin: '16:00', modalidad: 'PRESENCIAL', programa: 'CLINICA VETERINARIA', semestre: '1 SEM', corte: 'MOD#7', codigo: 'E-IYTMIN', modulo: 'INYECTOLOGIA Y TOMA DE MUESTRAS', docente: 'JENNIFER DEL VALLE RANDIAL', estudiantes: 8 },
+  { aula: '6F', horaInicio: '11:30', horaFin: '13:30', modalidad: 'PRESENCIAL', programa: 'CLINICA VETERINARIA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-ENFERIN', modulo: 'ENFERMEDADES INFECCIOSAS', docente: 'JENNIFER DEL VALLE RANDIAL', estudiantes: 8 },
+  { aula: '501B', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'ENFERMERIA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-APNTAV', modulo: 'APLICAR NORMAS Y TÉCNICAS DEL AMBIENTE VITAL', docente: 'KATIA VALENCIA', estudiantes: 17 },
+  { aula: '604', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'ENFERMERIA', semestre: '4 SEM', corte: 'MOD#7', codigo: 'E-CIMPRN', modulo: 'CUIDAR INTEGRALMENTE A LA MUJER EN EL POSTPARTO Y AL RECIÉN NACIDO', docente: 'ARIEL PUELLO', estudiantes: 8 },
+  { aula: '3B', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'FARMACIA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-FAR2', modulo: 'FARMACOLOGÍA II (USO RACIONAL DE MEDICAMENTOS)', docente: 'MONICA RODRIGUEZ RODRIGUEZ', estudiantes: 9 },
+  { aula: '3A', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'FARMACIA', semestre: '3 SEM', corte: 'MOD#7', codigo: '', modulo: 'PASA PARA LAS 9', docente: '', estudiantes: 0, revisar: true },
+  { aula: '4A', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'COSMETOLOGIA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-NUTDIE', modulo: 'NUTRICIÓNY DIETÉTICA', docente: 'KETTY CAMPOS', estudiantes: 6 },
+  { aula: '602', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'NAVIERA-LOGISTICA-COMERCIO', semestre: '1 SEM', corte: 'MOD#5', codigo: 'E-OPPREXI', modulo: 'OPERACIÓN DE LOS PROCESOS DE IMPORTACIONES I', docente: 'LUCIA ELJACH', estudiantes: 5 },
+  { aula: '501A', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'NAVIERA-LOGISTICA-COMERCIO', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-REGCAM', modulo: 'REGIMEN CAMBIARIO', docente: 'VILMA TORRES CHAVEZ', estudiantes: 15 },
+  { aula: '106', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'PRIMERA INFANCIA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-ETCN', modulo: 'ESTIMULACIÓN TEMPRANA Y CUIDADO DEL NIÑO', docente: 'MARIA TEREZA VARGAS', estudiantes: 15 },
+  { aula: '601B', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'AUX VUELO', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-SAI', modulo: 'ALIMENTOS Y BEBIDAS I (SERVICIO A LA MESA I)', docente: 'YEISON YEPES', estudiantes: 2 },
+  { aula: '2E', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'COCINA NAC E INTER', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-COSTOS', modulo: 'COSTOS', docente: 'CRISTIAN AROCA', estudiantes: 13 },
+  { aula: '2D', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'COCINA NAC E INTER', semestre: '3 SEM', corte: 'MOD#7', codigo: 'E-NUTDIE', modulo: 'NUTRICIÓNY DIETÉTICA', docente: 'HORTENSIA HERRERA VILLA', estudiantes: 8 },
+  { aula: 'DISEÑO GRAFICO', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'DISEÑO GRAFICO', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-COMUGRA', modulo: 'COMUNICACIÓN GRÁFICA', docente: 'ADRIANA GAVIRIA', estudiantes: 15 },
+  { aula: 'SISTEMAS 1', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'SISTEMAS-SOFTWARE', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-IBD', modulo: 'INTRODUCCIÓN A LAS BASE DATOS', docente: 'ANTONY BAIZ TEJEDOR', estudiantes: 13 },
+  { aula: 'MECANICA DIESEL', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'MECANICA DIESEL', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-RSD', modulo: 'REPARACIÓN DE LOS SISTEMAS DE COMBUSTIBLES DIÉSEL III', docente: 'HERNANDO LUIS GUZMAN ORTEGA', estudiantes: 11 },
+  { aula: 'MECANICA DIESEL', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'MECANICA DIESEL', semestre: '3 SEM', corte: 'MOD#7', codigo: 'E-RSD', modulo: 'REPARACIÓN DE LOS SISTEMAS DE COMBUSTIBLES DIÉSEL III', docente: 'HERNANDO LUIS GUZMAN ORTEGA', estudiantes: 3 },
+  { aula: 'MONTACARGA', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'MONTACARGA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-PROCOM4', modulo: 'PROCEDIMIENTOS OPERACIONALES DE MONTACARGA 4', docente: 'ELADIO BLANQUICETT RAMIREZ', estudiantes: 16 }
+];
+
+const horariosCorte6 = filasCorte6.map((fila, i) => ({
+  id: 'c6-hor-' + (i + 1),
+  ...fila,
+  fecha: RANGO_C6,
+  bloque: null,
+  fechas: FECHAS_C6
+}));
 
 module.exports = {
   profesores: profesoresImagen,
   materias: materiasImagen,
   salones: salonesImagen,
   estudiantes: estudiantesImagen,
-  horarios: horariosImagen
+  horarios: horariosConFechas,
+  horariosCorte6
 };
