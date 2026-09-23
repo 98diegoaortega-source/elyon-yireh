@@ -305,6 +305,18 @@ function matchesTimeQuery(query, schedule) {
   return normalizedSchedule.includes(`${hour}:${queryMatch[2]}`);
 }
 
+function getScheduleDays(schedule) {
+  if (Array.isArray(schedule.fechas) && schedule.fechas.length > 0) {
+    return [...new Set(schedule.fechas.map((entry) => entry.dia).filter(Boolean))];
+  }
+
+  return schedule.diaOriginal ? [schedule.diaOriginal] : [];
+}
+
+function getScheduleDaysText(schedule) {
+  return getScheduleDays(schedule).join(', ');
+}
+
 function matchesSearch(item, query) {
   if (!query) return true;
 
@@ -317,7 +329,7 @@ function matchesSearch(item, query) {
     item.semestre,
     item.modalidad,
     item.fecha,
-    item.dia,
+    getScheduleDaysText(item),
     item.horaInicio,
     item.horaFin
   ].join(' ');
@@ -432,7 +444,7 @@ function renderCards(items) {
           <div class="space-y-2 text-sm text-slate-300">
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">Día</span>
-              <strong class="text-right text-slate-900">${item.dia || 'Por confirmar'}</strong>
+              <strong class="text-right text-slate-900">${getScheduleDaysText(item) || 'Por confirmar'}</strong>
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">Horario</span>
@@ -534,9 +546,9 @@ function minutesFromTime(value) {
 }
 
 function renderVisualCalendar(items) {
-  const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
-  const columns = days.map((day, dayIndex) => {
-    const events = items.filter((item, index) => normalize(item.dia).includes(normalize(day)) || index % 5 === dayIndex);
+  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const columns = days.map((day) => {
+    const events = items.filter((item) => getScheduleDays(item).some((itemDay) => normalize(itemDay) === normalize(day)));
     const eventMarkup = events.map((item) => {
       const start = Math.max(360, minutesFromTime(item.horaInicio));
       const end = Math.max(start + 30, minutesFromTime(item.horaFin));
@@ -615,8 +627,12 @@ function renderTeachers() {
 }
 
 function renderCalendar(items) {
-  const days = [...new Set(items.map((item) => item.dia).filter(Boolean))]
-    .map((day) => ({ day, items: items.filter((item) => item.dia === day) }));
+  const days = [...new Set(items.flatMap((item) => getScheduleDays(item)))]
+    .filter(Boolean)
+    .map((day) => ({
+      day,
+      items: items.filter((item) => getScheduleDays(item).some((itemDay) => normalize(itemDay) === normalize(day)))
+    }));
 
   calendarContainer.innerHTML = days
     .map((dayData) => {
@@ -678,7 +694,7 @@ function buildModalContent(item) {
       <div class="grid gap-3 md:grid-cols-2">
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
           <div class="text-[10px] uppercase tracking-[0.18em] text-slate-400">Día y horario</div>
-          <div class="mt-2 font-semibold text-slate-900">${item.dia || 'Día por confirmar'} · ${item.horaInicio} - ${item.horaFin}</div>
+          <div class="mt-2 font-semibold text-slate-900">${getScheduleDaysText(item) || 'Día por confirmar'} · ${item.horaInicio} - ${item.horaFin}</div>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
           <div class="text-[10px] uppercase tracking-[0.18em] text-slate-400">Salón</div>
