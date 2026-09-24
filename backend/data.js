@@ -376,9 +376,9 @@ const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Vier
 function parseRangoFechas(texto) {
   const textoNormalizado = String(texto || '').trim();
   const meses = Object.keys(MESES).join('|');
-  const rango = textoNormalizado.match(new RegExp(`^(\\d{1,2})\\s+al\\s+(\\d{1,2})\\s+de\\s+(${meses})\\s+de\\s+(\\d{4})$`, 'i'));
+  const rango = textoNormalizado.match(new RegExp(`^(\\d{1,2})\\s+al\\s+(\\d{1,2})\\s+de\\s+(${meses})\\s+de\\s+(\\d{4})\\s*([A-Za-z])?$`, 'i'));
   const fechaConBloque = textoNormalizado.match(new RegExp(`^(\\d{1,2})\\s+de\\s+(${meses})\\s+de\\s+(\\d{4})\\s*([A-Za-z])$`, 'i'));
-  const rangoEntreMeses = textoNormalizado.match(new RegExp(`^(?:del\\s+)?(\\d{1,2})\\s+de\\s+(${meses})\\s+al\\s+(\\d{1,2})\\s+de\\s+(${meses})\\s+(?:de\\s+)?(\\d{4})$`, 'i'));
+  const rangoEntreMeses = textoNormalizado.match(new RegExp(`^(?:del\\s+)?(\\d{1,2})\\s+de\\s+(${meses})\\s+al\\s+(\\d{1,2})\\s+de\\s+(${meses})\\s+(?:de\\s+)?(\\d{4})\\s*([A-Za-z])?$`, 'i'));
 
   let diaInicio;
   let diaFin;
@@ -394,6 +394,7 @@ function parseRangoFechas(texto) {
     mesInicio = MESES[rango[3].toLowerCase()];
     mesFin = mesInicio;
     anio = Number(rango[4]);
+    bloque = rango[5] ? rango[5].toUpperCase() : null;
   } else if (fechaConBloque) {
     diaInicio = Number(fechaConBloque[1]);
     diaFin = diaInicio;
@@ -409,6 +410,7 @@ function parseRangoFechas(texto) {
     mesFin = MESES[rangoEntreMeses[4].toLowerCase()];
     anio = Number(rangoEntreMeses[5]);
     anioFin = mesFin < mesInicio ? anio + 1 : anio;
+    bloque = rangoEntreMeses[6] ? rangoEntreMeses[6].toUpperCase() : null;
   } else {
     return { fechas: [], bloque: null };
   }
@@ -441,6 +443,68 @@ function parseRangoFechas(texto) {
 
   return { fechas, bloque };
 }
+
+const fs = require('fs');
+const path = require('path');
+
+const MAPA_FECHAS = {
+  C5P: '07 de septiembre de 2026B',
+  C5I: '15 al 24 de septiembre de 2026B',
+  C5S: '15 al 24 de septiembre de 2026B',
+  C6P: 'del 23 de septiembre al 08 de octubre de 2026B'
+};
+
+const MAPA_MODALIDAD = {
+  C5P: 'Presencial',
+  C5I: 'Intensiva',
+  C5S: 'Semipresencial',
+  C6P: 'Presencial'
+};
+
+let contadorC5 = 0;
+let contadorC6 = 0;
+
+function parseLineaHorario(linea, index) {
+  const campos = linea.split('|');
+  const [marca, horaInicio, horaFin, aula, programa, semestre, corte, codigo, modulo, docente] = campos;
+  const fecha = MAPA_FECHAS[marca];
+  const { fechas, bloque } = parseRangoFechas(fecha);
+  const prefijo = marca.startsWith('C6') ? 'c6' : 'c5';
+  const numero = prefijo === 'c6' ? ++contadorC6 : ++contadorC5;
+
+  return {
+    id: `${prefijo}-${String(numero).padStart(3, '0')}`,
+    aula,
+    horaInicio,
+    horaFin,
+    modalidad: MAPA_MODALIDAD[marca],
+    programa,
+    semestre,
+    corte,
+    codigo,
+    modulo,
+    docente,
+    estudiantes: 0,
+    fecha,
+    bloque,
+    fechas
+  };
+}
+
+const rutaData = path.join(__dirname, '..', 'data-corregida.txt');
+let todasLasLineas = [];
+try {
+  todasLasLineas = fs.readFileSync(rutaData, 'utf8')
+    .split(/\r?\n/)
+    .map((linea) => linea.trim())
+    .filter(Boolean);
+} catch (error) {
+  console.warn('No se pudo leer data-corregida.txt:', error.message);
+}
+
+const todosLosHorarios = todasLasLineas.map((linea, index) => parseLineaHorario(linea, index));
+const horariosNuevos = todosLosHorarios.filter((horario) => horario.id.startsWith('c5'));
+const horariosCorte6Nuevos = todosLosHorarios.filter((horario) => horario.id.startsWith('c6'));
 
 const horariosConFechas = horariosImagen.map((h) => {
   const { fechas, bloque } = parseRangoFechas(h.fecha);
@@ -507,6 +571,6 @@ module.exports = {
   materias: materiasImagen,
   salones: salonesImagen,
   estudiantes: estudiantesImagen,
-  horarios: horariosConFechas,
-  horariosCorte6
+  horarios: horariosNuevos,
+  horariosCorte6: horariosCorte6Nuevos
 };
