@@ -4,11 +4,11 @@ const state = {
   allSchedule: [],
   allTeachers: [],
   selectedView: 'tarjetas',
-  selectedSchedule: 'corte6',
   studentId: 'est-101'
 };
 
 let horariosCorte6 = [];
+let verTodos = false;
 
 const searchInput = document.getElementById('searchInput');
 const dayFilter = document.getElementById('dayFilter');
@@ -135,15 +135,13 @@ async function cargarCorte6() {
   try {
     const result = await fetchJson(`${API_BASE_URL}/api/v1/horarios-corte6`);
     if (result.ok !== true || !Array.isArray(result.data)) {
-      throw new Error('La respuesta de horarios actuales no tiene el formato esperado');
+      throw new Error('La respuesta de horarios del Corte 6 no tiene el formato esperado');
     }
     horariosCorte6 = result.data;
-    if (state.selectedSchedule === 'corte6') renderCorte6();
+    render();
   } catch (error) {
-    console.error('Error cargando horarios actuales:', error);
-    if (state.selectedSchedule === 'corte6') {
-      cardsContainer.innerHTML = '<div class="glass rounded-3xl p-6 text-rose-600">No se pudieron cargar los horarios actuales.</div>';
-    }
+    console.error('Error cargando horarios del Corte 6:', error);
+    cardsContainer.innerHTML = '<div class="glass rounded-3xl p-6 text-rose-600">No se pudieron cargar los horarios del Corte 6.</div>';
   }
 }
 
@@ -375,7 +373,7 @@ function getFilteredSchedule() {
   const career = careerFilter?.value || '';
   const room = roomFilter?.value || '';
 
-  const source = state.selectedSchedule === 'corte6' ? horariosCorte6 : state.allSchedule;
+  const source = verTodos ? [...horariosCorte6, ...state.allSchedule] : horariosCorte6;
 
   return source.filter((item) => {
     const matchesSemester = !semester || item.semestre === semester;
@@ -392,27 +390,13 @@ function getFilteredSchedule() {
 
 function renderCards(items) {
   const query = searchInput.value.trim();
-  const hasSearch = Boolean(query || programSearch.value.trim() || timeSearch.value.trim() || dateSearch.value.trim());
 
   const tabs = `
-    <div class="schedule-tabs col-span-full mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Cortes académicos">
-      <button type="button" class="schedule-tab ${state.selectedSchedule === 'corte5' ? 'active' : ''}" data-schedule-tab="corte5">Horarios regulares (109)</button>
-      <button type="button" class="schedule-tab ${state.selectedSchedule === 'corte6' ? 'active' : ''}" data-schedule-tab="corte6">Horarios actuales (${horariosCorte6.length || 26})</button>
+    <div class="glass col-span-full mb-4 flex items-center gap-3 rounded-2xl p-4">
+      <input type="checkbox" id="verTodosCheck" class="h-5 w-5 cursor-pointer accent-green-700" ${verTodos ? 'checked' : ''}>
+      <label for="verTodosCheck" class="cursor-pointer text-sm font-medium text-slate-700">Ver todos los horarios</label>
+      <span id="contadorHorarios" class="ml-auto text-xs text-slate-500"></span>
     </div>`;
-
-  if (!hasSearch) {
-    resultCount.textContent = '';
-    calendarButton.classList.add('hidden');
-    cardsContainer.innerHTML = `${tabs}
-      <div class="rounded-3xl border border-dashed border-blue-200 bg-blue-50/60 p-10 text-center">
-        <i class="ph ph-magnifying-glass mb-3 text-4xl text-blue-500"></i>
-        <h3 class="text-lg font-bold text-slate-900">¿Qué deseas consultar?</h3>
-        <p class="mt-2 text-sm text-slate-500">Escribe un programa, docente, salón, horario o fecha para ver los resultados.</p>
-      </div>
-    `;
-    bindScheduleTabs();
-    return;
-  }
 
   resultCount.textContent = `${items.length} resultado${items.length === 1 ? '' : 's'}`;
   calendarButton.classList.remove('hidden');
@@ -422,7 +406,6 @@ function renderCards(items) {
     cardsContainer.innerHTML = `${tabs}
       <p class="text-center text-slate-500 py-8">No se encontraron resultados para "${query}"</p>
     `;
-    bindScheduleTabs();
     return;
   }
 
@@ -430,30 +413,30 @@ function renderCards(items) {
     ${query ? `<div class="col-span-full mb-1 text-sm text-slate-500"><strong class="text-slate-900">${items.length}</strong> resultado(s) para <strong class="text-blue-600">${query}</strong></div>` : ''}
     ${items
     .map((item) => {
-      const teacherInitials = item.profesor?.foto || 'PR';
+      const program = item.programa || item.carrera || item.materia?.programa || 'Sin programa';
+      const module = item.modulo || item.materia?.nombre || 'Sin módulo';
+      const teacher = item.docente || item.profesor?.nombre || 'Sin docente';
+      const classroom = item.aula || item.salon?.nombre || '—';
+      const teacherInitials = item.profesor?.foto || teacher.split(' ').map((part) => part[0]).join('').slice(0, 2);
       return `
         <article class="glass result-card rounded-3xl p-5">
           <div class="mb-4 flex items-start justify-between gap-3">
-            <div class="card-actions"><button class="favorite-star ${isFavorite(item.id) ? 'is-favorite' : ''}" type="button" data-favorite="${item.id}" aria-label="${isFavorite(item.id) ? 'Quitar favorito' : 'Agregar favorito'}">★</button><button class="rounded-full border border-slate-700 bg-slate-900/50 px-2.5 py-1 text-xs text-slate-300" data-open="${item.id}">${translations[currentLanguage].details}</button></div>
+            <div class="card-actions"><button class="favorite-star ${isFavorite(item.id) ? 'is-favorite' : ''}" type="button" data-favorite="${item.id}" aria-label="${isFavorite(item.id) ? 'Quitar favorito' : 'Agregar favorito'}">★</button></div>
           </div>
 
-          <p class="mb-2 text-sm text-slate-400">${item.carrera || item.materia?.programa || 'Programa'} · ${item.semestre || 'Semestre'}</p>
-          <h3 class="mb-4 text-xl font-semibold text-slate-900">${item.modulo || item.materia?.nombre || 'Sin módulo'}</h3>
+          <p class="mb-2 text-sm text-slate-400">${program} · ${item.semestre || 'Semestre'}</p>
+          <h3 class="mb-4 text-xl font-semibold text-slate-900">${module}</h3>
 
           <div class="mb-4 flex items-center gap-3">
             <div class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br ${item.profesor?.color || 'from-cyan-500 to-indigo-500'} text-sm font-bold text-white">
               ${teacherInitials}
             </div>
             <div>
-              <p class="font-medium text-slate-900">${item.profesor?.nombre || 'Profesor'}</p>
+              <p class="font-medium text-slate-900">${teacher}</p>
             </div>
           </div>
 
           <div class="space-y-2 text-sm text-slate-300">
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-slate-400">Día</span>
-              <strong class="text-right text-slate-900">${getScheduleDaysText(item) || 'Por confirmar'}</strong>
-            </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">Horario</span>
               <strong class="text-right text-slate-900">${item.horaInicio} - ${item.horaFin}</strong>
@@ -468,7 +451,7 @@ function renderCards(items) {
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">Salón</span>
-              <strong class="text-slate-900">${item.salon?.nombre || item.aula || 'Por asignar'}</strong>
+              <strong class="text-slate-900">${classroom}</strong>
             </div>
             ${item.estudiantes > 0 ? `<div class="flex items-center justify-between gap-2"><span class="text-slate-400">Estudiantes</span><strong class="text-slate-900">${item.estudiantes} estudiantes</strong></div>` : ''}
           </div>
@@ -495,73 +478,6 @@ function renderCards(items) {
   cardsContainer.querySelectorAll('[data-calendar]').forEach((button) => {
     button.addEventListener('click', () => addToGoogleCalendar(button.dataset.calendar));
   });
-  bindScheduleTabs();
-}
-
-function bindScheduleTabs() {
-  cardsContainer.querySelectorAll('[data-schedule-tab]').forEach((button) => {
-    button.addEventListener('click', () => {
-      state.selectedSchedule = button.dataset.scheduleTab;
-      if (state.selectedSchedule === 'corte6') {
-        renderCorte6();
-      } else {
-        render();
-      }
-    });
-  });
-}
-
-function renderCorte6(items = getFilteredSchedule()) {
-  const tabs = `
-    <div class="schedule-tabs col-span-full mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Cortes académicos">
-      <button type="button" class="schedule-tab" data-schedule-tab="corte5">Horarios regulares (109)</button>
-      <button type="button" class="schedule-tab active" data-schedule-tab="corte6">Horarios actuales (${horariosCorte6.length})</button>
-    </div>`;
-  const cards = items.map((item) => {
-    return `<article class="glass result-card rounded-3xl p-5 ${item.revisar ? 'revisar' : ''}">
-      <div class="mb-4 flex items-start justify-between gap-3">
-        <div class="card-actions">
-          <button class="rounded-full border border-slate-700 bg-slate-900/50 px-2.5 py-1 text-xs text-slate-300" data-open="${item.id}">${translations[currentLanguage].details}</button>
-        </div>
-      </div>
-
-      <p class="mb-2 text-sm text-slate-400">${item.programa || 'Programa'} · ${item.semestre || 'Semestre'}</p>
-      <h3 class="mb-4 text-xl font-semibold text-slate-900">${item.modulo || 'Sin módulo'}</h3>
-
-      <div class="mb-4 flex items-center gap-3">
-        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-indigo-500 text-sm font-bold text-white">${(item.docente || 'SD').split(' ').map((part) => part[0]).join('').slice(0, 2)}</div>
-        <div>
-          <p class="font-medium text-slate-900">${item.docente || 'Sin docente'}</p>
-        </div>
-      </div>
-
-      <div class="space-y-2 text-sm text-slate-300">
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-slate-400">Horario</span>
-          <strong class="text-right text-slate-900">${item.horaInicio}-${item.horaFin}${item.estudiantes > 0 ? ` · ${item.estudiantes} estudiantes` : ''}</strong>
-        </div>
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-slate-400">Día</span>
-          <strong class="text-right text-slate-900">${getScheduleDaysText(item) || 'Por confirmar'}</strong>
-        </div>
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-slate-400">Fecha</span>
-          <strong class="text-right text-slate-900">${limpiarFecha(item.fecha) || 'Por confirmar'}</strong>
-        </div>
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-slate-400">Aula</span>
-          <strong class="text-slate-900">${item.aula || 'Por asignar'}</strong>
-        </div>
-      </div>
-    </article>`;
-  }).join('');
-
-  const termino = searchInput.value.trim();
-  const emptyMessage = termino
-    ? `<p class="text-center text-slate-500 py-8">No se encontraron resultados para "${termino}"</p>`
-    : '<div class="glass rounded-3xl p-6">No hay horarios actuales.</div>';
-  cardsContainer.innerHTML = `${tabs}${cards || emptyMessage}`;
-  bindScheduleTabs();
 }
 
 function shareSchedule(itemId) {
@@ -699,12 +615,10 @@ function renderCalendar(items) {
 }
 
 function render() {
-  if (state.selectedSchedule === 'corte6') {
-    renderCorte6();
-    return;
-  }
   const filtered = getFilteredSchedule();
   renderCards(filtered);
+  const counter = document.getElementById('contadorHorarios');
+  if (counter) counter.textContent = `${filtered.length} horarios`;
   renderCalendar(filtered);
   renderTeachers();
 }
@@ -865,6 +779,11 @@ async function createAdminRow(event) {
 }
 
 searchInput.addEventListener('input', scheduleSearch);
+cardsContainer.addEventListener('change', (event) => {
+  if (event.target.id !== 'verTodosCheck') return;
+  verTodos = event.target.checked;
+  render();
+});
 searchInput.addEventListener('focus', () => {
   if (!searchInput.value.trim()) renderSearchHistory();
 });
