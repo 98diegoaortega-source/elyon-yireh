@@ -182,7 +182,11 @@ function parseLineaHorario(linea, index) {
   };
 }
 
-const rutaData = path.join(__dirname, '..', 'data-corregida.txt');
+const rutasData = [
+  path.join(__dirname, 'data-corregida.txt'),
+  path.join(__dirname, '..', 'data-corregida.txt')
+];
+const rutaData = rutasData.find((ruta) => fs.existsSync(ruta)) || rutasData[0];
 let todasLasLineas = [];
 try {
   todasLasLineas = fs.readFileSync(rutaData, 'utf8')
