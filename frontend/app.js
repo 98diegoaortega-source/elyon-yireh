@@ -306,11 +306,29 @@ function matchesTimeQuery(query, schedule) {
 }
 
 function getScheduleDays(schedule) {
-  if (Array.isArray(schedule.fechas) && schedule.fechas.length > 0) {
-    return [...new Set(schedule.fechas.map((entry) => entry.dia).filter(Boolean))];
+  if (!Array.isArray(schedule.fechas) || schedule.fechas.length === 0) {
+    return schedule.diaOriginal ? [schedule.diaOriginal] : [];
   }
 
-  return schedule.diaOriginal ? [schedule.diaOriginal] : [];
+  const hoy = new Date();
+  const dd = String(hoy.getDate()).padStart(2, '0');
+  const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+  const yyyy = hoy.getFullYear();
+  const hoyStr = `${dd}/${mm}/${yyyy}`;
+
+  let entrada = schedule.fechas.find(f => f.fecha === hoyStr);
+  if (!entrada) {
+    entrada = schedule.fechas[0];
+  }
+
+  if (entrada && entrada.dia === 'Domingo') {
+    const idx = schedule.fechas.indexOf(entrada);
+    const siguiente = schedule.fechas.slice(idx + 1).find(f => f.dia !== 'Domingo');
+    if (siguiente) entrada = siguiente;
+    else return [];
+  }
+
+  return entrada ? [entrada.dia] : [];
 }
 
 function getScheduleDaysText(schedule) {
