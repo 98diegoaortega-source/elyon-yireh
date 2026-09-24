@@ -410,109 +410,137 @@ function renderCards(items, agrupar = false) {
     </div>`;
 
   resultCount.textContent = `${items.length} resultado${items.length === 1 ? '' : 's'}`;
+
   if (!items.length) {
-    cardsContainer.innerHTML = `${tabs}
-      <p class="text-center text-slate-500 py-8">No se encontraron resultados para "${query}"</p>
-    `;
+    cardsContainer.innerHTML = `${tabs}<p class="text-center text-slate-500 py-8">No se encontraron resultados para "${query}"</p>`;
     const counter = document.getElementById('contadorHorarios');
     if (counter) counter.textContent = `${items.length} horarios`;
     return;
   }
 
-  const groups = agrupar
-    ? [...items.reduce((grouped, item) => {
-      const key = `${item.horaInicio} - ${item.horaFin}`;
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key).push(item);
-      return grouped;
-    }, new Map())].sort(([first], [second]) => minutesFromTime(first.split(' - ')[0]) - minutesFromTime(second.split(' - ')[0]))
-    : [['', items]];
+  function to12h(hhmm) {
+    if (!hhmm) return '';
+    const [h, m] = hhmm.split(':').map(Number);
+    const ampm = h < 12 ? 'AM' : 'PM';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+  }
 
-  const cardsMarkup = groups.map(([franja, groupItems]) => `
-    ${agrupar ? `<h3 class="franja-titulo col-span-full">${formatHora(groupItems[0].horaInicio)} - ${formatHora(groupItems[0].horaFin)} <span>(${groupItems.length} módulos)</span></h3>` : ''}
-    ${groupItems
-    .map((item) => {
-      const program = item.programa || item.carrera || item.materia?.programa || 'Sin programa';
-      const module = item.modulo || item.materia?.nombre || 'Sin módulo';
-      const teacher = item.docente || item.profesor?.nombre || 'Sin docente';
-      const classroom = item.aula || item.salon?.nombre || '—';
-      const teacherInitials = item.profesor?.foto || teacher.split(' ').map((part) => part[0]).join('').slice(0, 2);
+  function bloqueDe(horaInicio) {
+    const map = { '06:30': 1, '09:00': 2, '11:30': 8, '13:45': 3, '16:15': 4, '19:00': 5 };
+    return map[horaInicio] || '';
+  }
+
+  function colorPrograma(prog) {
+    const p = (prog || '').toLowerCase();
+    if (p.includes('enfermer')) return '#A8D0E6';
+    if (p.includes('farmacia')) return '#C89BDF';
+    if (p.includes('cosmetolog')) return '#4A9EFF';
+    if (p.includes('naviera')) return '#7FE0D4';
+    if (p.includes('infancia')) return '#F0A0A0';
+    if (p.includes('veterinaria')) return '#7FE0E0';
+    if (p.includes('aux vuelo')) return '#FFD060';
+    if (p.includes('cocina')) return '#3CB371';
+    if (p.includes('diseño')) return '#D0D0D0';
+    if (p.includes('sistemas')) return '#B0C4DE';
+    if (p.includes('diésel') || p.includes('diesel')) return '#D0D0D0';
+    if (p.includes('montacarga')) return '#A0A0A0';
+    if (p.includes('ingles') || p.includes('inglés') || p.includes('lengua')) return '#E0FF60';
+    if (p.includes('admon') || p.includes('admos')) return '#90EE90';
+    if (p.includes('aux contable')) return '#50E090';
+    if (p.includes('refrigeraci')) return '#C0C0F0';
+    if (p.includes('soldadura')) return '#C0C0F0';
+    if (p.includes('seguridad')) return '#F0E080';
+    if (p.includes('inv judicial') || p.includes('criminalística')) return '#80D0E0';
+    if (p.includes('deporte') || p.includes('recreaci')) return '#FFE080';
+    if (p.includes('mecánica dental') || p.includes('mecanica dental')) return '#FF80C0';
+    if (p.includes('salud oral')) return '#80E080';
+    if (p.includes('hotelería') || p.includes('hoteleria')) return '#FFE0A0';
+    if (p.includes('mesa y bar')) return '#FFD080';
+    if (p.includes('cosmetolog')) return '#80A0FF';
+    return '#E0E0E0';
+  }
+
+  function colorSemestre(sem) {
+    const s = (sem || '').toUpperCase();
+    if (s.includes('1SEM') || s.includes('1 SEM')) return '#F0C0D0';
+    if (s.includes('2SEM') || s.includes('2 SEM')) return '#A0D0F0';
+    if (s.includes('3SEM') || s.includes('3 SEM')) return '#F0F0A0';
+    if (s.includes('4SEM') || s.includes('4 SEM')) return '#C0F0C0';
+    if (s.includes('COMBI')) return '#FFFF00';
+    return '#E0E0E0';
+  }
+
+  function colorModulo() {
+    return '#FFE0C0';
+  }
+
+  function colorDocente() {
+    return '#FFFF00';
+  }
+
+  const grupos = {};
+  items.forEach((item) => {
+    const key = `${item.modalidad || 'Presencial'}|${item.fecha || ''}|${item.horaInicio}-${item.horaFin}`;
+    if (!grupos[key]) {
+      grupos[key] = { modalidad: item.modalidad || 'Presencial', fecha: item.fecha || '', horaInicio: item.horaInicio, horaFin: item.horaFin, items: [] };
+    }
+    grupos[key].items.push(item);
+  });
+
+  const ordenados = Object.values(grupos).sort((a, b) => (a.horaInicio || '').localeCompare(b.horaInicio || ''));
+
+  let html = tabs;
+
+  ordenados.forEach((g) => {
+    const corteNum = (g.items[0].corte || '').replace('MOD#', '').trim();
+    const modalidad = (g.modalidad || '').toUpperCase();
+    const fecha = g.fecha || '';
+    const titulo = `CORTE ${corteNum} - MODALIDAD ${modalidad} ${fecha}`;
+
+    const filas = g.items.map((item) => {
+      const horario12 = `(${bloqueDe(item.horaInicio)}) ${to12h(item.horaInicio)} - ${to12h(item.horaFin)} - ${(item.modalidad || '').toUpperCase()}`;
+      const codigoYModulo = `${item.codigo || ''}${item.modulo || ''}`;
       return `
-        <article class="glass result-card rounded-3xl p-5">
-          <div class="mb-4 flex items-start justify-between gap-3">
-            <div class="card-actions"><button class="favorite-star ${isFavorite(item.id) ? 'is-favorite' : ''}" type="button" data-favorite="${item.id}" aria-label="${isFavorite(item.id) ? 'Quitar favorito' : 'Agregar favorito'}">★</button></div>
-          </div>
+        <tr>
+          <td style="border:1px solid #000;padding:4px 8px;font-weight:bold;background:#FFF0A0">${item.aula || ''}</td>
+          <td style="border:1px solid #000;padding:4px 8px;background:#B0E0F0">${horario12}</td>
+          <td style="border:1px solid #000;padding:4px 8px;background:${colorPrograma(item.programa)};font-weight:bold">${item.programa || ''}</td>
+          <td style="border:1px solid #000;padding:4px 8px;background:${colorSemestre(item.semestre)}">${item.semestre || ''}</td>
+          <td style="border:1px solid #000;padding:4px 8px;text-align:center">${item.corte || ''}</td>
+          <td style="border:1px solid #000;padding:4px 8px;background:${colorModulo()}">${codigoYModulo}</td>
+          <td style="border:1px solid #000;padding:4px 8px;background:${colorDocente()};font-weight:bold">${item.docente || ''}</td>
+          <td style="border:1px solid #000;padding:4px 8px;background:#E00000;color:#FFF;text-align:center;font-weight:bold">${item.estudiantes || ''}</td>
+        </tr>`;
+    }).join('');
 
-          <p class="mb-2 text-sm text-slate-400">${program} · ${item.semestre || 'Semestre'}</p>
-          <h3 class="mb-4 text-xl font-semibold text-slate-900">${module}</h3>
+    html += `
+      <div style="margin-bottom:24px;overflow-x:auto;background:#FFF">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;background:#FFF">
+          <thead>
+            <tr>
+              <td colspan="8" style="background:#FFF;color:#000;font-weight:bold;font-size:16px;text-align:center;padding:8px;border:2px solid #000">${titulo}</td>
+            </tr>
+            <tr>
+              <th style="border:1px solid #000;background:#FFA500;padding:6px;font-weight:bold">AULA#</th>
+              <th style="border:1px solid #000;background:#FFA500;padding:6px;font-weight:bold">HORARIO</th>
+              <th style="border:1px solid #000;background:#FFA500;padding:6px;font-weight:bold">PROGRAMA</th>
+              <th style="border:1px solid #000;background:#FFA500;padding:6px;font-weight:bold">SEMESTRE</th>
+              <th style="border:1px solid #000;background:#FFA500;padding:6px;font-weight:bold">CORTE#${corteNum}</th>
+              <th style="border:1px solid #000;background:#FFA500;padding:6px;font-weight:bold">NOMBRE DEL MODULO ${corteNum}</th>
+              <th style="border:1px solid #000;background:#FFB6C1;padding:6px;font-weight:bold">DOCENTE</th>
+              <th style="border:1px solid #000;background:#FFF;padding:6px;width:30px"></th>
+            </tr>
+          </thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>`;
+  });
 
-          <div class="mb-4 flex items-center gap-3">
-            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br ${item.profesor?.color || 'from-cyan-500 to-indigo-500'} text-sm font-bold text-white">
-              ${teacherInitials}
-            </div>
-            <div>
-              <p class="font-medium text-slate-900">${teacher}</p>
-            </div>
-          </div>
-
-          <div class="space-y-2 text-sm text-slate-300">
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-slate-400">AULA#</span>
-              <strong class="text-right text-slate-900">${classroom}</strong>
-            </div>
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-slate-400">HORARIO</span>
-              <strong class="text-right text-slate-900">${item.horaInicio} - ${item.horaFin}</strong>
-            </div>
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-slate-400">PROGRAMA</span>
-              <strong class="text-right text-slate-900">${program}</strong>
-            </div>
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-slate-400">SEMESTRE</span>
-              <strong class="text-right text-slate-900">${item.semestre || '—'}</strong>
-            </div>
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-slate-400">CORTE#4</span>
-              <strong class="text-right text-slate-900">${item.corte || '—'}</strong>
-            </div>
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-slate-400">NOMBRE DE MODULO 4</span>
-              <strong class="text-right text-slate-900">${module}</strong>
-            </div>
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-slate-400">DOCENTE</span>
-              <strong class="text-right text-slate-900">${teacher}</strong>
-            </div>
-          </div>
-
-          <button type="button" class="share-whatsapp mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-green-200 px-4 py-2.5 text-sm font-semibold text-green-700" data-share="${item.id}">
-            <i class="ph ph-whatsapp-logo"></i> ${translations[currentLanguage].share}
-          </button>
-        </article>
-      `;
-    })
-    .join('')}
-  `).join('');
-
-  cardsContainer.innerHTML = `${tabs}
-    ${query ? `<div class="col-span-full mb-1 text-sm text-slate-500"><strong class="text-slate-900">${items.length}</strong> resultado(s) para <strong class="text-blue-600">${query}</strong></div>` : ''}
-    ${cardsMarkup}
-  `;
+  cardsContainer.innerHTML = html;
   const counter = document.getElementById('contadorHorarios');
   if (counter) counter.textContent = `${items.length} horarios`;
-
-  cardsContainer.querySelectorAll('[data-open]').forEach((button) => {
-    button.addEventListener('click', () => openModal(button.dataset.open));
-  });
-  cardsContainer.querySelectorAll('[data-share]').forEach((button) => {
-    button.addEventListener('click', () => shareSchedule(button.dataset.share));
-  });
-  cardsContainer.querySelectorAll('[data-favorite]').forEach((button) => {
-    button.addEventListener('click', () => toggleFavorite(button.dataset.favorite));
-  });
 }
-
 function shareSchedule(itemId) {
   const item = state.allSchedule.find((entry) => entry.id === itemId);
   if (!item) return;
