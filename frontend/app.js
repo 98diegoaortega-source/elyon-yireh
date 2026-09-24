@@ -335,32 +335,30 @@ function getScheduleDaysText(schedule) {
   return getScheduleDays(schedule).join(', ');
 }
 
-function matchesSearch(item, query) {
-  if (!query) return true;
+function coincideConBusqueda(item, termino) {
+  if (!termino) return true;
 
-  const text = [
+  const t = normalize(termino.trim());
+  const campos = [
+    item.docente,
+    item.modulo,
+    item.programa,
+    item.aula,
+    item.codigo,
+    item.carrera,
+    item.semestre,
     item.materia?.nombre,
     item.materia?.programa,
     item.profesor?.nombre,
     item.salon?.nombre,
-    item.carrera,
-    item.semestre,
     item.modalidad,
     item.fecha,
     getScheduleDaysText(item),
     item.horaInicio,
     item.horaFin
-  ].join(' ');
+  ];
 
-  const normalizedText = normalize(text);
-  const ignoredWords = new Set(['busco', 'buscar', 'el', 'la', 'los', 'las', 'de', 'del', 'un', 'una', 'por', 'programa', 'programas', 'docente', 'profesor', 'profesora', 'horario', 'horarios']);
-  const searchTerms = normalize(query).split(/\s+/).filter((term) => term && !ignoredWords.has(term));
-
-  if (normalize(query).includes('horario')) return true;
-
-  if (!searchTerms.length) return true;
-
-  return searchTerms.every((term) => normalizedText.includes(term));
+  return campos.some((campo) => campo && normalize(campo).includes(t));
 }
 
 function getFilteredSchedule() {
@@ -372,12 +370,14 @@ function getFilteredSchedule() {
   const career = careerFilter?.value || '';
   const room = roomFilter?.value || '';
 
-  return state.allSchedule.filter((item) => {
+  const source = state.selectedSchedule === 'corte6' ? horariosCorte6 : state.allSchedule;
+
+  return source.filter((item) => {
     const matchesSemester = !semester || item.semestre === semester;
     const matchesCareer = !career || item.carrera === career;
-    const matchesRoom = !room || item.salon?.nombre === room;
-    const matchesSearchValue = matchesSearch(item, search);
-    const matchesProgram = !program || normalize(item.carrera).includes(normalize(program));
+    const matchesRoom = !room || item.salon?.nombre === room || item.aula === room;
+    const matchesSearchValue = coincideConBusqueda(item, search);
+    const matchesProgram = !program || normalize(item.carrera || item.programa || item.materia?.programa).includes(normalize(program));
     const matchesTime = !time || matchesTimeQuery(time, `${item.horaInicio} ${item.horaFin}`);
     const matchesDate = !date || normalize(item.fecha).includes(normalize(date));
 
@@ -415,13 +415,7 @@ function renderCards(items) {
   if (!items.length) {
     calendarButton.classList.add('hidden');
     cardsContainer.innerHTML = `${tabs}
-      <div class="glass col-span-full rounded-3xl p-12 text-center">
-        <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 text-cyan-300">
-          <i class="ph ph-magnifying-glass text-4xl"></i>
-        </div>
-        <h3 class="text-xl font-semibold text-slate-900">No encontramos coincidencias</h3>
-        <p class="mt-2 text-sm text-slate-500">Prueba con otro programa, docente, semestre o salón.</p>
-      </div>
+      <p class="text-center text-slate-500 py-8">No se encontraron resultados para "${query}"</p>
     `;
     bindScheduleTabs();
     return;
@@ -520,16 +514,13 @@ function bindScheduleTabs() {
   });
 }
 
-function renderCorte6() {
+function renderCorte6(items = getFilteredSchedule()) {
   const tabs = `
     <div class="schedule-tabs col-span-full mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Cortes académicos">
       <button type="button" class="schedule-tab" data-schedule-tab="corte5">Corte 5 (109)</button>
       <button type="button" class="schedule-tab active" data-schedule-tab="corte6">Corte 6 (${horariosCorte6.length})</button>
     </div>`;
-  const cards = horariosCorte6.map((item) => {
-    const inicio = item.fechas?.[0]?.fecha || 'Sin fecha';
-    const fin = item.fechas?.at(-1)?.fecha || inicio;
-    const cantidadFechas = item.fechas?.length || 0;
+  const cards = items.map((item) => {
     return `<article class="glass result-card rounded-3xl p-5 ${item.revisar ? 'revisar' : ''}">
       <div class="mb-4 flex items-start justify-between gap-3">
         <div class="rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 p-3 text-sm font-bold text-white shadow-lg">
@@ -559,19 +550,15 @@ function renderCorte6() {
           <span class="text-slate-400">Horario</span>
           <strong class="text-right text-slate-900">${item.horaInicio}-${item.horaFin}${item.estudiantes > 0 ? ` · ${item.estudiantes} estudiantes` : ''}</strong>
         </div>
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-slate-400">Día</span>
-          <strong class="text-right text-slate-900">${getScheduleDaysText(item) || 'Por confirmar'}</strong>
-        </div>
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-slate-400">Rango</span>
-          <strong class="text-right text-slate-900">${inicio} → ${fin} (${cantidadFechas} días)</strong>
-        </div>
       </div>
     </article>`;
   }).join('');
 
-  cardsContainer.innerHTML = `${tabs}${cards || '<div class="glass rounded-3xl p-6">No hay registros de Corte 6.</div>'}`;
+  const termino = searchInput.value.trim();
+  const emptyMessage = termino
+    ? `<p class="text-center text-slate-500 py-8">No se encontraron resultados para "${termino}"</p>`
+    : '<div class="glass rounded-3xl p-6">No hay registros de Corte 6.</div>';
+  cardsContainer.innerHTML = `${tabs}${cards || emptyMessage}`;
   bindScheduleTabs();
 }
 
