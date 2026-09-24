@@ -146,9 +146,6 @@ function parseRangoFechas(texto) {
   return { fechas, bloque };
 }
 
-const fs = require('fs');
-const path = require('path');
-
 const MAPA_FECHAS = {
   C5P: '07 de septiembre de 2026B',
   C5I: '15 al 24 de septiembre de 2026B',
@@ -182,22 +179,142 @@ function parseLineaHorario(linea, index) {
   };
 }
 
-const rutasData = [
-  path.join(__dirname, 'data-corregida.txt'),
-  path.join(__dirname, '..', 'data-corregida.txt')
+const DATA_LINEAS = [
+  'C5P|06:30|08:45|501B|Enfermería|2 SEM|MOD#5|E-CONIUE|CONTROLAR LAS INFECCIONES EN LOS USUARIOS Y SU ENTORNO|Katia Valencia',
+  'C5P|06:30|08:45|604|Enfermería|4 SEM|MOD#5||CUIDAR INTEGRALMENTE A LA PAREJA EN EL EMBARAZO Y EL PARTO|Ariel Puello',
+  'C5P|06:30|08:45|3B|Farmacia|2 SEM|MOD#5|E-BIOSEG|BIOSEGURIDAD|Mónica Rodríguez Rodríguez',
+  'C5P|06:30|08:45|3A|Farmacia|3 SEM|MOD#5|E-PRIAUX|PRIMEROS AUXILIOS|Liliana Manrique',
+  'C5P|06:30|08:45|4A|Cosmetología|2 SEM|MOD#5|E-DEPI|DEPILACIÓN I|Ketty Campos',
+  'C5P|06:30|08:45|501A|Naviera-Logística-Comercio|2 SEM|MOD#5|E-RECDEME|RECEPCIÓN Y DESPACHO DE LAS MERCANCÍAS|Castor Ramírez',
+  'C5P|06:30|08:45|602|Naviera-Logística-Comercio|1 SEM|MOD#5|E-LEGADU|LEGISLACIÓN ADUANERA|Lucía Eljach',
+  'C5P|06:30|08:45|106|Primera Infancia|2 SEM|MOD#5|E-PSIEVO|PSICOLOGÍA EVOLUTIVA|María Teresa Vargas',
+  'C5P|06:30|08:45|601B|Aux Vuelo|2 SEM|MOD#5|T-MAL|MANIPULACIÓN DE ALIMENTOS|Jeison Yepes',
+  'C5P|06:30|08:45|2E|Cocina Nac e Inter|2 SEM|MOD#5|E-COCCAI|COCINA CALIENTE II|Nicolaza Medina',
+  'C5P|06:30|08:45|2D|Cocina Nac e Inter|3 SEM|MOD#5|E-COCINTII|COCINA INTERNACIONAL II|Víctor Alcázar',
+  'C5P|06:30|08:45|Diseño Gráfico|Diseño Gráfico|2 SEM|MOD#5|E-COMGRA|COMPOSICIÓN GRÁFICA|Adriana Gaviria',
+  'C5P|06:30|08:45|Sistemas 1|Sistemas-Software|2 SEM|MOD#5|E-CPW|CONSTRUCCIÓN Y MANTENIMIENTO DE PÁGINAS WEB|Julio Maturana',
+  'C5P|06:30|08:45|Mecánica Diésel|Mecánica Diésel|2 SEM|MOD#5|E-RSII|REPARACIÓN DE LOS SISTEMAS DE COMBUSTIBLES DIÉSEL II|Hernando Luis Guzmán Ortega',
+  'C5P|06:30|08:45|Mecánica Diésel|Mecánica Diésel|3 SEM|MOD#5|E-RSII|REPARACIÓN DE LOS SISTEMAS DE COMBUSTIBLES DIÉSEL II|Hernando Luis Guzmán Ortega',
+  'C5P|06:30|08:45|Montacarga|Montacarga|2 SEM|MOD#5|E-PROCOM3|PROCEDIMIENTOS OPERACIONALES DE MONTACARGA 3|Eladio Blanquicett Ramírez',
+  'C5P|06:30|08:45|6B|Lengua Inglesa|2 SEM|MOD#5|NIVEL 11|NIVEL 11|José Tara',
+  'C5P|09:00|11:15|3A|Enfermería|1 SEM|MOD#5|E-OUNOS|ORIENTAR AL USUARIO EN LAS NORMAS DE SALUD|Katia Valencia',
+  'C5P|09:00|11:15|104|Enfermería|2 SEM|MOD#5|E-CONIUE|CONTROLAR LAS INFECCIONES EN LOS USUARIOS Y SU ENTORNO|Marlly López',
+  'C5P|09:00|11:15|601A|Enfermería|4 SEM|MOD#5||CUIDAR INTEGRALMENTE A LA PAREJA EN EL EMBARAZO Y EL PARTO|Ariel Puello',
+  'C5P|09:00|11:15|502A|Clínica Veterinaria|3 SEM|MOD#5|E-SERVCLI|SERVICIO AL CLIENTE|Cristian Aroca',
+  'C5P|09:00|11:15|602|Naviera-Logística-Comercio|2 SEM|MOD#5|E-RECDEME|RECEPCIÓN Y DESPACHO DE LAS MERCANCÍAS|Lucía Teresa Eljach Mosquera',
+  'C5P|09:00|11:15|702|Naviera-Logística-Comercio|3 SEM|MOD#5|E-ZONFRA|ZONA FRANCA|Castor Ramírez',
+  'C5P|09:00|11:15|501B|Aux Vuelo|1 SEM|MOD#5|E-AGEVIA|AGENCIA DE VIAJES I|Jeison Yepes',
+  'C5P|09:00|11:15|2D|Cocina Nac e Inter|1 SEM|MOD#5|E-COCFRA|COCINA FRÍA I|Hortensia Herrera',
+  'C5P|11:30|13:30|604|Clínica Veterinaria|2 SEM|MOD#5|E-PARACI|PARACITOLOGIA|Jennifer Del Valle Randial',
+  'C5P|13:45|16:00|604|Clínica Veterinaria|1 SEM|MOD#5|E-AFAN|PRIMEROS AUXILIOS VETERINARIOS|Jennifer Del Valle Randial',
+  'C5I|09:00|11:15|104|Enfermería|4SEM INT|MOD#3||CUIDAR INTEGRALMENTE AL NIÑO Y A LA NIÑA MENOR DE 10 AÑOS|Carmen Lora',
+  'C5I|09:00|11:15|502A|Clínica Veterinaria|3 SEM|MOD#5|E-SERVCLI|SERVICIO AL CLIENTE|Cristian Aroca',
+  'C5I|09:00|11:15|Cosmetología|Cosmetología|2SEM INT|MOD#5|E-MAQSOC|MAQUILLAJE SOCIAL|Luz Angely Quintero',
+  'C5I|09:00|11:15|106|Primera Infancia|2SEM INT|MOD#5|E-ETCN|ESTIMULACIÓN TEMPRANA Y CUIDADO DEL NIÑO|María Tereza Vargas',
+  'C5I|09:00|11:15|2B|Mesa y Bar|1SEM INT|MOD#5|T-MAL|MANIPULACIÓN DE ALIMENTOS|Víctor Alcázar',
+  'C5I|09:00|11:15|601B|Hotelería-Recepción|3SEM INT|MOD#5|E-RECRESI|RECEPCIÓN Y RESERVAS I|Nataly Valle',
+  'C5I|09:00|11:15|2E|Cocina Nac e Inter|2SEM INT|MOD#5|E-COSTOS|COSTOS|Pedro Baldovino',
+  'C5I|09:00|11:15|Mecánica Diésel|Mecánica Diésel|1SEM INT|MOD#7|E-MDII|REPARACIÓN MOTORES DIÉSEL III|Hernando Luis Guzmán Ortega',
+  'C5I|09:00|11:15|703|Seguridad Ocupacional|3SEM INT|MOD#5|E-SISINGE|SISTEMAS INTEGRADOS DE GESTIÓN (CALIDAD)|Gloria Amador',
+  'C5I|09:00|11:15|6D|Inglés Técnico Niveles|COMBI SEM|MOD#1|NIVEL 2|NIVEL 2|Abrahan Villalba',
+  'C5I|09:00|11:15|6C|Inglés Técnico Niveles|COMBI SEM|MOD#1|NIVEL 2|NIVEL 2|Danna Vanessa Arenas Yi',
+  'C5I|11:30|13:30|104|Enfermería|1SEM INT|MOD#7|T-ING|METODOLOGÍA DE LA INVESTIGACIÓN TÉCNICA|Marlly López',
+  'C5I|11:30|13:30|103|Enfermería|2SEM INT|MOD#5|E-APNSCI|APLICAR NORMAS DE SEGURIDAD Y COMODIDAD I|Ariel Puello',
+  'C5I|11:30|13:30|3A|Farmacia|1SEM INT|MOD#7|E-QUIBAS|QUÍMICA BÁSICA|Liliana Manrique',
+  'C5I|11:30|13:30|3B|Farmacia|2SEM INT|MOD#5|E-FAR2|FARMACOLOGÍA II|Yesenia Bravo',
+  'C5I|11:30|13:30|1A|Salud Oral|2SEM INT|MOD#5|E-ATEADU|ATENCIÓN Y ADMISIÓN AL USUARIO|Indira Espinoza Duarte',
+  'C5I|11:30|13:30|1A|Mecánica Dental|1SEM INT|MOD#7|E-ADMLAB|ADMINISTRACIÓN DEL LABORATORIO|Indira Espinoza Duarte',
+  'C5I|11:30|13:30|1A|Mecánica Dental|2SEM INT|MOD#5|E-ADMLAB|ADMINISTRACIÓN DEL LABORATORIO|Indira Espinoza Duarte',
+  'C5I|11:30|13:30|503|Clínica Veterinaria|2 SEM|MOD#5|E-PARACI|PARACITOLOGIA|Jennifer Del Valle Randial',
+  'C5I|11:30|13:30|Cosmetología|Cosmetología|1SEM INT|MOD#7|E-TECFAC|TÉCNICAS FACIALES I|Luz Anyeli Quintero Rodríguez',
+  'C5I|11:30|13:30|7A|Recreación y Deporte|1SEM INT|MOD#7|E-PED|PEDAGOGÍA DEPORTIVA|Rodrigo Montes',
+  'C5I|11:30|13:30|1B|Admon de Empresas-RRHH-Salud|1SEM INT|MOD#7|E-CFINCI|CONTABILIDAD FINANCIERA II|Cristian Aroca',
+  'C5I|11:30|13:30|803|Admon de Empresas-RRHH-Salud|2SEM INT|MOD#5|E-SACAUSU|SERVICIO AL CLIENTE Y ATENCIÓN AL USUARIO II LEY 100-93|Alexander García',
+  'C5I|11:30|13:30|1B|Admos Salud|1SEM INT|MOD#7|E-CFINCI|CONTABILIDAD FINANCIERA II|Cristian Aroca',
+  'C5I|11:30|13:30|803|Admos Salud|2SEM INT|MOD#5|E-SACAUSU|SERVICIO AL CLIENTE Y ATENCIÓN AL USUARIO II LEY 100-93|Alexander García',
+  'C5I|11:30|13:30|6F|Admos Salud|3SEM INT|MOD#5|E-ADSA|ADMINISTRACIÓN EN SALUD II|Beltis Lora',
+  'C5I|11:30|13:30|4B|Aux Contable|1SEM INT|MOD#7|E-CRECO|CONTABILIDAD DE RESULTADOS|Mario Correa',
+  'C5I|11:30|13:30|801|Naviera-Logística-Comercio|1SEM INT|MOD#7|E-OPPREXI|OPERACIÓN DE LOS PROCESOS DE EXPORTACIONES I|Castor Ramírez',
+  'C5I|11:30|13:30|602|Naviera-Logística-Comercio|2SEM INT|MOD#5|E-REGCAM|REGIMEN CAMBIARIO|Lucía Teresa Eljach Mosquera',
+  'C5I|11:30|13:30|106|Primera Infancia|1SEM INT|MOD#7|E-AYUDIDII|AYUDAS DIDÁCTICA II|Maria Tereza Vargas',
+  'C5I|11:30|13:30|2B|Hotelería-Recepción|1SEM INT|MOD#7|E-SAI|ALIMENTOS Y BEBIDAS I (SERVICIO A LA MESA I)|Jeison Yepes',
+  'C5I|11:30|13:30|2B|Hotelería-Recepción|2SEM INT|MOD#5|E-SAI|ALIMENTOS Y BEBIDAS I (SERVICIO A LA MESA I)|Jeison Yepes',
+  'C5I|11:30|13:30|2D|Cocina Nac e Inter|1SEM INT|MOD#7|E-COCFRII|COCINA FRÍA II|Hortensia Herrera',
+  'C5I|11:30|13:30|2E|Cocina Nac e Inter|3SEM INT|MOD#5|E-COCINTII|COCINA INTERNACIONAL II|Víctor Alcázar',
+  'C5I|11:30|13:30|Sistemas 1|Sistemas-Software|1SEM INT|MOD#7|E-LGM|LÓGICA COMPUTACIONAL|Julio Maturana',
+  'C5I|11:30|13:30|Sistemas 2|Sistemas-Sofware|2SEM INT|MOD#5|E-IAR|INTRODUCCIÓN A LAS REDES Y SERVICIOS DE INTERNET|Richard Arnedo',
+  'C5I|11:30|13:30|Sistemas 2|Sistemas-Sofware|3SEM INT|MOD#5|E-IAR|INTRODUCCIÓN A LAS REDES Y SERVICIOS DE INTERNET|Richard Arnedo',
+  'C5I|11:30|13:30|Refrigeración|Refrigeración|1SEM INT|MOD#7|T-EVAP|EVAPORADORES|Iván Sevilla Monterrosa',
+  'C5I|11:30|13:30|Soldadura|Soldadura|1SEM INT|MOD#7||CONOCIMIENTOS DE LOS ELECTRODOS RUTÍLICOS Y CELULÓSICOS DE BAJO HIDRÓGENO|Xiomara Osorio Altamar',
+  'C5I|11:30|13:30|Soldadura|Soldadura|2SEM INT|MOD#5||RECONOCIMIENTO DE MÁQUINAS Y HERRAMIENTAS PARA LOS PROCESOS DE SOLDADURA|Xiomara Osorio Altamar',
+  'C5I|11:30|13:30|6E|Mecánica Diésel|2SEM INT|MOD#5|E-AVHA|ACONDICIONAR VEHÍCULOS (SISTEMAS DE TRANSMISIÓN II)|Hernando Luis Guzmán Ortega',
+  'C5I|11:30|13:30|505|Seguridad Ocupacional|1SEM INT|MOD#7|E-HIGIND|HIGIENE INDUSTRIAL|Yesith Daniel Carvajalino',
+  'C5I|11:30|13:30|703|Seguridad Ocupacional|2SEM INT|MOD#5|E-TRAALRI|TRABAJOS DE ALTO RIESGO|Gloria Amador',
+  'C5I|11:30|13:30|6A|Montacarga|1SEM INT|MOD#7|E-SISALM2|SISTEMA DE ALMACENAMIENTO 2|Rafael Bautista',
+  'C5I|11:30|13:30|Montacargas|Montacarga|2SEM INT|MOD#5|E-PROCOM4|PROCEDIMIENTOS OPERACIONALES DE MONTACARGA 4|Eladio Blanquicett Ramírez',
+  'C5I|11:30|13:30|405|Inv Judicial y Criminalística|1SEM INT|MOD#7|E-PRO|PROBATORIO|Cynthia Xibellys Cancio Gómez',
+  'C5I|11:30|13:30|6D|Lengua Inglesa|1SEM INT|MOD#7|NIVEL 5|NIVEL 5|Abrahan Villalba',
+  'C5I|11:30|13:30|6C|Lengua Inglesa|2SEM INT|MOD#5|NIVEL 12|NIVEL 12|Danna Vanessa Arenas Yi',
+  'C5I|11:30|13:30|6B|Inglés Técnico Niveles|COMBI SEM|MOD#1|NIVEL 2|NIVEL 2|Carlos Salas',
+  'C5I|13:45|16:00|104|Enfermería|3SEM INT|MOD#5|E-PAMED|PREPARACIÓN Y ADMINISTRACIÓN DE MEDICAMENTOS I|Ariel Puello',
+  'C5I|13:45|16:00|3B|Farmacia|3SEM INT|MOD#5|E-PRIAUX|PRIMEROS AUXILIOS|Marlly López',
+  'C5I|13:45|16:00|1A|Salud Oral|3SEM INT|MOD#5|E-PREAMASE|PREPARACIÓN DE AMALGAMAS Y SELLANTES|Indira Espinoza Duarte',
+  'C5I|13:45|16:00|503|Clínica Veterinaria|1 SEM|MOD#5|E-AFAN|PRIMEROS AUXILIOS VETERINARIOS|Jennifer Del Valle Randial',
+  'C5I|13:45|16:00|801|Cosmetología|3SEM INT|MOD#5|E-TECFAC|TÉCNICAS FACIALES III|Luz Anyeli Quintero',
+  'C5I|13:45|16:00|1B|Recreación y Deporte|2SEM INT|MOD#5|E-EAV|MOTROCIDAD GENERAL|Rodrigo Montes',
+  'C5I|13:45|16:00|1B|Recreación y Deporte|3SEM INT|MOD#5|E-EAV|MOTROCIDAD GENERAL|Rodrigo Montes',
+  'C5I|13:45|16:00|4E|Admon de Empresas-RRHH-Salud|3SEM INT|MOD#5|E-SELPER|SELECCIÓN DE PERSONAL|Alexander García',
+  'C5I|13:45|16:00|4B|Aux Contable|3SEM INT|MOD#5|E-ANLFI|ANÁLISIS FINANCIERO I|Mario Correa',
+  'C5I|13:45|16:00|602|Naviera Logística-Comercio|3SEM INT|MOD#5|E-ZONFRA|ZONA FRANCA|Lucía Teresa Eljach Mosquera',
+  'C5I|13:45|16:00|106|Primera Infancia|3SEM INT|MOD#5|E-LEGEDU|LEGISLACIÓN EDUCATIVA|Otilia Rivas',
+  'C5I|13:45|16:00|2E|Hotelería-Recepción|3SEM INT|MOD#5|E-RECRESI|RECEPCIÓN Y RESERVAS I|Jeison Yepes',
+  'C5I|13:45|16:00|2D|Cocina Nac e Inter|3SEM INT|MOD#5|E-COCINTII|COCINA INTERNACIONAL II|Víctor Alcázar',
+  'C5I|13:45|16:00|Sistemas 1|Sistemas-Software|3SEM INT|MOD#5|E-IAR|INTRODUCCIÓN A LAS REDES Y SERVICIOS DE INTERNET|Julio Maturana Franco',
+  'C5I|13:45|16:00|Refrigeración|Refrigeración|2SEM INT|MOD#5|T-ANAL|ANÁLISIS DE FALLAS|Iván Sevilla Monterrosa',
+  'C5I|13:45|16:00|Refrigeración|Refrigeración|3SEM INT|MOD#5|T-ANAL|ANÁLISIS DE FALLAS|Iván Sevilla Monterrosa',
+  'C5I|13:45|16:00|Mecánica Diésel|Mecánica Diésel|3SEM INT|MOD#5|E-RSII|REPARACIÓN DE LOS SISTEMAS DE COMBUSTIBLES DIÉSEL II|Hernando Luis Guzmán Ortega',
+  'C5I|13:45|16:00|703|Seguridad Ocupacional|3SEM INT|MOD#5|E-SISINGE|SISTEMAS INTEGRADOS DE GESTIÓN (CALIDAD)|Gloria Amador',
+  'C5I|13:45|16:00|405|Inv Judicial y Criminalística|3SEM INT|MOD#5|INVES-QUIM|QUÍMICA FORENSE|Cynthia Xibellys Cancio Gómez',
+  'C5I|13:45|16:00|6D|Lengua Inglesa|3SEM INT|MOD#5|NIVEL 20|NIVEL 20|Abrahan Villalba',
+  'C5I|13:45|16:00|6C|Inglés Técnico Niveles|COMBI SEM|MOD#1|NIVEL 2|NIVEL 2|Danna Arenas',
+  'C5I|16:15|18:30|2D|Enfermería|3SEM INT|MOD#5|E-PAMED|PREPARACIÓN Y ADMINISTRACIÓN DE MEDICAMENTOS I|Yira Fajardo',
+  'C5I|16:15|18:30|Cosmetología|Cosmetología|3SEM INT|MOD#5|E-TECFAC|TÉCNICAS FACIALES III|Luz Anyeli Quintero Rodríguez',
+  'C5I|16:15|18:30|602|Naviera-Logística-Comercio|3SEM INT|MOD#5|E-ZONFRA|ZONA FRANCA|Castor Ramírez',
+  'C5I|16:15|18:30|Inglés Técnico Niveles|Inglés Técnico Niveles|COMBI SEM|MOD#1|NIVEL 2|NIVEL 2 (VIRTUAL)|Danna Arenas',
+  'C5I|16:15|18:30|Inglés Técnico Niveles|Inglés Técnico Niveles|COMBI SEM|MOD#1|NIVEL 2|NIVEL 2 (VIRTUAL)|Yeison Yepes',
+  'C5S|19:00|21:00|3A|Farmacia|3SEM INT|MOD#5|E-PRIAUX|PRIMEROS AUXILIOS|(Sin docente)',
+  'C5S|19:00|21:00|Sistemas 2|Admon de Empresas-RRHH-Salud|4SEM INT|MOD#3|E-SOADMA|SOFTWARE ADMINISTRATIVO I|Cristian Aroca',
+  'C5S|19:00|21:00|Inglés Técnico Niveles|Inglés Técnico Niveles|COMBI SEM|MOD#1|NIVEL 2|NIVEL 2 (VIRTUAL)|José Tara',
+  'C5S|19:00|21:00|Inglés Técnico Niveles|Inglés Técnico Niveles|COMBI SEM|MOD#1|NIVEL 2|NIVEL 2 (VIRTUAL)|Yeison Yepes',
+  'C6P|06:30|08:45|501B|Enfermería|2 SEM|MOD#7|E-APNTAV|APLICAR NORMAS Y TÉCNICAS DEL AMBIENTE VITAL|Katia Valencia',
+  'C6P|06:30|08:45|604|Enfermería|4 SEM|MOD#7|E-CIMPRN|CUIDAR INTEGRALMENTE A LA MUJER EN EL POSTPARTO Y AL RECIÉN NACIDO|Ariel Puello',
+  'C6P|06:30|08:45|3B|Farmacia|2 SEM|MOD#7|E-FAR2|FARMACOLOGÍA II (USO RACIONAL DE MEDICAMENTOS)|Mónica Rodríguez Rodríguez',
+  'C6P|06:30|08:45|4A|Cosmetología|2 SEM|MOD#7|E-NUTDIE|NUTRICIÓN Y DIETÉTICA|Ketty Campos',
+  'C6P|06:30|08:45|602|Naviera-Logística-Comercio|1 SEM|MOD#5|E-OPPREXI|OPERACIÓN DE LOS PROCESOS DE IMPORTACIONES I|Lucía Eljach',
+  'C6P|06:30|08:45|501A|Naviera-Logística-Comercio|2 SEM|MOD#7|E-REGCAM|REGIMEN CAMBIARIO|Vilma Torres Chávez',
+  'C6P|06:30|08:45|106|Primera Infancia|2 SEM|MOD#7|E-ETCN|ESTIMULACIÓN TEMPRANA Y CUIDADO DEL NIÑO|María Tereza Vargas',
+  'C6P|06:30|08:45|601B|Aux Vuelo|2 SEM|MOD#7|E-SAI|ALIMENTOS Y BEBIDAS I (SERVICIO A LA MESA I)|Yeison Yepes',
+  'C6P|06:30|08:45|2E|Cocina Nac e Inter|2 SEM|MOD#7|E-COSTOS|COSTOS|Cristian Aroca',
+  'C6P|06:30|08:45|2D|Cocina Nac e Inter|3 SEM|MOD#7|E-NUTDIE|NUTRICIÓN Y DIETÉTICA|Hortensia Herrera Villa',
+  'C6P|06:30|08:45|Diseño Gráfico|Diseño Gráfico|2 SEM|MOD#7|E-COMUGRA|COMUNICACIÓN GRÁFICA|Adriana Gaviria',
+  'C6P|06:30|08:45|Sistemas 1|Sistemas-Software|2 SEM|MOD#7|E-IBD|INTRODUCCIÓN A LAS BASE DATOS|Antony Baiz Tejedor',
+  'C6P|06:30|08:45|Mecánica Diésel|Mecánica Diésel|2 SEM|MOD#7|E-RSD|REPARACIÓN DE LOS SISTEMAS DE COMBUSTIBLES DIÉSEL III|Hernando Luis Guzmán Ortega',
+  'C6P|06:30|08:45|Mecánica Diésel|Mecánica Diésel|3 SEM|MOD#7|E-RSD|REPARACIÓN DE LOS SISTEMAS DE COMBUSTIBLES DIÉSEL III|Hernando Luis Guzmán Ortega',
+  'C6P|06:30|08:45|Montacarga|Montacarga|2 SEM|MOD#7|E-PROCOM4|PROCEDIMIENTOS OPERACIONALES DE MONTACARGA 4|Eladio Blanquicett Ramírez',
+  'C6P|09:00|11:15|3A|Enfermería|1 SEM|MOD#7|E-GENHSA|GENERAR HÁBITOS SALUDABLES EN LOS AMBIENTES DE TRABAJO|Marlly López',
+  'C6P|09:00|11:15|104|Enfermería|2 SEM|MOD#7|E-APNTAV|APLICAR NORMAS Y TÉCNICAS DEL AMBIENTE VITAL|Katia Valencia',
+  'C6P|09:00|11:15|601A|Enfermería|4 SEM|MOD#7|E-CIMPRN|CUIDAR INTEGRALMENTE A LA MUJER EN EL POSTPARTO Y AL RECIÉN NACIDO|Ariel Puello',
+  'C6P|09:00|11:15|3A|Farmacia|3 SEM|MOD#7|E-NPS|NEGOCIACIÓN DE PRODUCTOS Y SERVICIOS I|Liliana Manrique',
+  'C6P|09:00|11:15|602|Naviera-Logística-Comercio|2 SEM|MOD#7|E-REGCAM|REGIMEN CAMBIARIO|Lucía Teresa Eljach Mosquera',
+  'C6P|09:00|11:15|702|Naviera-Logística-Comercio|3 SEM|MOD#7|E-ARANIA|ARANCEL I|Vilma Torres',
+  'C6P|09:00|11:15|501B|Aux Vuelo|1 SEM|MOD#7|E-DESTUR|DESTINO TURÍSTICO|Yeison Yepes',
+  'C6P|09:00|11:15|2D|Cocina Nac e Inter|1 SEM|MOD#7|E-COCFRIA|COCINA FRÍA I|Hortensia Herrera',
+  'C6P|09:00|11:15|103|Inglés Técnico Niveles|COMBI SEM|MOD#7|NIVEL 12|NIVEL 12|José Tara',
+  'C6P|11:30|13:30|6F|Clínica Veterinaria|2 SEM|MOD#7|E-ENFERIN|ENFERMEDADES INFECCIOSAS|Jennifer Del Valle Randial',
+  'C6P|13:45|16:00|6F|Clínica Veterinaria|1 SEM|MOD#7|E-IYTMIN|INYECTOLOGIA Y TOMA DE MUESTRAS|Jennifer Del Valle Randial'
 ];
-const rutaData = rutasData.find((ruta) => fs.existsSync(ruta)) || rutasData[0];
-let todasLasLineas = [];
-try {
-  todasLasLineas = fs.readFileSync(rutaData, 'utf8')
-    .split(/\r?\n/)
-    .map((linea) => linea.trim())
-    .filter(Boolean);
-} catch (error) {
-  console.warn('No se pudo leer data-corregida.txt:', error.message);
-}
 
-const todosLosHorarios = todasLasLineas.map((linea, index) => parseLineaHorario(linea, index));
+const todosLosHorarios = DATA_LINEAS.map((linea, index) => parseLineaHorario(linea, index));
 const horarios = todosLosHorarios.filter((horario) => horario.id.startsWith('c5'));
 const horariosCorte6 = todosLosHorarios.filter((horario) => horario.id.startsWith('c6'));
 
