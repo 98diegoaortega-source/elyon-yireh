@@ -135,14 +135,14 @@ async function cargarCorte6() {
   try {
     const result = await fetchJson(`${API_BASE_URL}/api/v1/horarios-corte6`);
     if (result.ok !== true || !Array.isArray(result.data)) {
-      throw new Error('La respuesta de Corte 6 no tiene el formato esperado');
+      throw new Error('La respuesta de horarios actuales no tiene el formato esperado');
     }
     horariosCorte6 = result.data;
     if (state.selectedSchedule === 'corte6') renderCorte6();
   } catch (error) {
-    console.error('Error cargando Corte 6:', error);
+    console.error('Error cargando horarios actuales:', error);
     if (state.selectedSchedule === 'corte6') {
-      cardsContainer.innerHTML = '<div class="glass rounded-3xl p-6 text-rose-600">No se pudo cargar el Corte 6.</div>';
+      cardsContainer.innerHTML = '<div class="glass rounded-3xl p-6 text-rose-600">No se pudieron cargar los horarios actuales.</div>';
     }
   }
 }
@@ -335,6 +335,11 @@ function getScheduleDaysText(schedule) {
   return getScheduleDays(schedule).join(', ');
 }
 
+function limpiarFecha(fecha) {
+  if (!fecha) return '';
+  return String(fecha).replace(/\s*[A-Z]\s*$/, '').trim();
+}
+
 function coincideConBusqueda(item, termino) {
   if (!termino) return true;
 
@@ -391,8 +396,8 @@ function renderCards(items) {
 
   const tabs = `
     <div class="schedule-tabs col-span-full mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Cortes académicos">
-      <button type="button" class="schedule-tab ${state.selectedSchedule === 'corte5' ? 'active' : ''}" data-schedule-tab="corte5">Corte 5 (109)</button>
-      <button type="button" class="schedule-tab ${state.selectedSchedule === 'corte6' ? 'active' : ''}" data-schedule-tab="corte6">Corte 6 (${horariosCorte6.length || 26})</button>
+      <button type="button" class="schedule-tab ${state.selectedSchedule === 'corte5' ? 'active' : ''}" data-schedule-tab="corte5">Horarios regulares (109)</button>
+      <button type="button" class="schedule-tab ${state.selectedSchedule === 'corte6' ? 'active' : ''}" data-schedule-tab="corte6">Horarios actuales (${horariosCorte6.length || 26})</button>
     </div>`;
 
   if (!hasSearch) {
@@ -426,22 +431,14 @@ function renderCards(items) {
     ${items
     .map((item) => {
       const teacherInitials = item.profesor?.foto || 'PR';
-      const accentClass = item.materia?.color || 'from-slate-500 to-slate-700';
-
       return `
         <article class="glass result-card rounded-3xl p-5">
           <div class="mb-4 flex items-start justify-between gap-3">
-            <div class="rounded-2xl bg-gradient-to-br ${accentClass} p-3 text-sm font-bold text-white shadow-lg">
-              ${item.corte || 'Horario'}
-            </div>
             <div class="card-actions"><button class="favorite-star ${isFavorite(item.id) ? 'is-favorite' : ''}" type="button" data-favorite="${item.id}" aria-label="${isFavorite(item.id) ? 'Quitar favorito' : 'Agregar favorito'}">★</button><button class="rounded-full border border-slate-700 bg-slate-900/50 px-2.5 py-1 text-xs text-slate-300" data-open="${item.id}">${translations[currentLanguage].details}</button></div>
           </div>
 
-          <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-cyan-200">
-            <i class="ph ph-books"></i> ${item.carrera || item.materia?.programa || 'Programa'}
-          </div>
-          <h3 class="mb-1 text-xl font-semibold text-slate-900">${item.carrera || item.materia?.programa || 'Programa académico'}</h3>
-          <p class="mb-3 text-sm text-slate-400">${item.semestre || 'Semestre'} · ${item.modalidad || 'Presencial'}</p>
+          <p class="mb-2 text-sm text-slate-400">${item.carrera || item.materia?.programa || 'Programa'} · ${item.semestre || 'Semestre'}</p>
+          <h3 class="mb-4 text-xl font-semibold text-slate-900">${item.modulo || item.materia?.nombre || 'Sin módulo'}</h3>
 
           <div class="mb-4 flex items-center gap-3">
             <div class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br ${item.profesor?.color || 'from-cyan-500 to-indigo-500'} text-sm font-bold text-white">
@@ -449,7 +446,6 @@ function renderCards(items) {
             </div>
             <div>
               <p class="font-medium text-slate-900">${item.profesor?.nombre || 'Profesor'}</p>
-              <p class="text-xs text-slate-400">Semestre: ${item.semestre || 'Por definir'}</p>
             </div>
           </div>
 
@@ -463,17 +459,18 @@ function renderCards(items) {
               <strong class="text-right text-slate-900">${item.horaInicio} - ${item.horaFin}</strong>
             </div>
             <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-400">Día</span>
+              <strong class="text-right text-slate-900">${getScheduleDaysText(item) || 'Por confirmar'}</strong>
+            </div>
+            <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">Fecha</span>
-              <strong class="text-right text-slate-900">${item.fecha || 'Por confirmar'}</strong>
+              <strong class="text-right text-slate-900">${limpiarFecha(item.fecha) || 'Por confirmar'}</strong>
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">Salón</span>
-              <strong class="text-slate-900">${item.salon?.nombre || 'Por asignar'}</strong>
+              <strong class="text-slate-900">${item.salon?.nombre || item.aula || 'Por asignar'}</strong>
             </div>
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-slate-400">Modalidad</span>
-              <strong class="text-slate-900">${item.modalidad || 'Presencial'}</strong>
-            </div>
+            ${item.estudiantes > 0 ? `<div class="flex items-center justify-between gap-2"><span class="text-slate-400">Estudiantes</span><strong class="text-slate-900">${item.estudiantes} estudiantes</strong></div>` : ''}
           </div>
 
           <button type="button" class="share-whatsapp mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-green-200 px-4 py-2.5 text-sm font-semibold text-green-700" data-share="${item.id}">
@@ -517,31 +514,24 @@ function bindScheduleTabs() {
 function renderCorte6(items = getFilteredSchedule()) {
   const tabs = `
     <div class="schedule-tabs col-span-full mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Cortes académicos">
-      <button type="button" class="schedule-tab" data-schedule-tab="corte5">Corte 5 (109)</button>
-      <button type="button" class="schedule-tab active" data-schedule-tab="corte6">Corte 6 (${horariosCorte6.length})</button>
+      <button type="button" class="schedule-tab" data-schedule-tab="corte5">Horarios regulares (109)</button>
+      <button type="button" class="schedule-tab active" data-schedule-tab="corte6">Horarios actuales (${horariosCorte6.length})</button>
     </div>`;
   const cards = items.map((item) => {
     return `<article class="glass result-card rounded-3xl p-5 ${item.revisar ? 'revisar' : ''}">
       <div class="mb-4 flex items-start justify-between gap-3">
-        <div class="rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 p-3 text-sm font-bold text-white shadow-lg">
-          Aula ${item.aula || 'Por asignar'}
-        </div>
         <div class="card-actions">
-          <span class="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200">${item.corte || 'Corte 6'}</span>
+          <button class="rounded-full border border-slate-700 bg-slate-900/50 px-2.5 py-1 text-xs text-slate-300" data-open="${item.id}">${translations[currentLanguage].details}</button>
         </div>
       </div>
 
-      <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-cyan-200">
-        <i class="ph ph-books"></i> ${item.programa || 'Programa'}
-      </div>
-      <h3 class="mb-1 text-xl font-semibold text-slate-900">${item.modulo || item.codigo || 'Sin módulo'}</h3>
-      <p class="mb-3 text-sm text-slate-400">${item.semestre || 'Semestre'} · ${item.modalidad || 'Presencial'}</p>
+      <p class="mb-2 text-sm text-slate-400">${item.programa || 'Programa'} · ${item.semestre || 'Semestre'}</p>
+      <h3 class="mb-4 text-xl font-semibold text-slate-900">${item.modulo || 'Sin módulo'}</h3>
 
       <div class="mb-4 flex items-center gap-3">
         <div class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-indigo-500 text-sm font-bold text-white">${(item.docente || 'SD').split(' ').map((part) => part[0]).join('').slice(0, 2)}</div>
         <div>
           <p class="font-medium text-slate-900">${item.docente || 'Sin docente'}</p>
-          <p class="text-xs text-slate-400">${item.codigo || 'Sin código'}</p>
         </div>
       </div>
 
@@ -550,6 +540,18 @@ function renderCorte6(items = getFilteredSchedule()) {
           <span class="text-slate-400">Horario</span>
           <strong class="text-right text-slate-900">${item.horaInicio}-${item.horaFin}${item.estudiantes > 0 ? ` · ${item.estudiantes} estudiantes` : ''}</strong>
         </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-slate-400">Día</span>
+          <strong class="text-right text-slate-900">${getScheduleDaysText(item) || 'Por confirmar'}</strong>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-slate-400">Fecha</span>
+          <strong class="text-right text-slate-900">${limpiarFecha(item.fecha) || 'Por confirmar'}</strong>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-slate-400">Aula</span>
+          <strong class="text-slate-900">${item.aula || 'Por asignar'}</strong>
+        </div>
       </div>
     </article>`;
   }).join('');
@@ -557,7 +559,7 @@ function renderCorte6(items = getFilteredSchedule()) {
   const termino = searchInput.value.trim();
   const emptyMessage = termino
     ? `<p class="text-center text-slate-500 py-8">No se encontraron resultados para "${termino}"</p>`
-    : '<div class="glass rounded-3xl p-6">No hay registros de Corte 6.</div>';
+    : '<div class="glass rounded-3xl p-6">No hay horarios actuales.</div>';
   cardsContainer.innerHTML = `${tabs}${cards || emptyMessage}`;
   bindScheduleTabs();
 }
