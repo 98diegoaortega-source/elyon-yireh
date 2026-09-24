@@ -9,6 +9,7 @@ const state = {
 
 let horariosCorte6 = [];
 let verTodos = false;
+let franjaSeleccionada = 'todas';
 
 const searchInput = document.getElementById('searchInput');
 const dayFilter = document.getElementById('dayFilter');
@@ -69,7 +70,37 @@ const translations = {
 };
 
 const revisarStyles = document.createElement('style');
-revisarStyles.textContent = '.revisar { background: #fff3cd; }';
+revisarStyles.textContent = `
+  .revisar { background: #fff3cd; }
+  .franja-btn {
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .franja-btn:hover { background: #f1f5f9; }
+  .franja-btn.active {
+    background: #15803d;
+    color: #fff;
+    border-color: #15803d;
+  }
+  .franja-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 24px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .franja-titulo span { font-weight: 400; color: #94a3b8; }
+`;
 document.head.appendChild(revisarStyles);
 let adminToken = sessionStorage.getItem('academic_admin_token') || '';
 let searchDebounce;
@@ -319,6 +350,14 @@ function coincideConBusqueda(item, termino) {
   return campos.some((campo) => campo && normalize(campo).includes(t));
 }
 
+function formatHora(hhmm) {
+  if (!hhmm) return '';
+  const [hour, minute] = hhmm.split(':').map(Number);
+  const ampm = hour < 12 ? 'AM' : 'PM';
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hour12}:${String(minute).padStart(2, '0')} ${ampm}`;
+}
+
 function getFilteredSchedule() {
   const search = searchInput.value.trim();
   const program = programSearch.value;
@@ -330,7 +369,7 @@ function getFilteredSchedule() {
 
   const source = verTodos ? [...horariosCorte6, ...state.allSchedule] : horariosCorte6;
 
-  return source.filter((item) => {
+  let lista = source.filter((item) => {
     const matchesSemester = !semester || item.semestre === semester;
     const matchesCareer = !career || item.carrera === career;
     const matchesRoom = !room || item.salon?.nombre === room || item.aula === room;
@@ -341,9 +380,16 @@ function getFilteredSchedule() {
 
     return matchesSemester && matchesCareer && matchesRoom && matchesSearchValue && matchesProgram && matchesTime && matchesDate;
   });
+
+  if (franjaSeleccionada !== 'todas') {
+    const [inicio, fin] = franjaSeleccionada.split('-');
+    lista = lista.filter((item) => item.horaInicio === inicio && item.horaFin === fin);
+  }
+
+  return lista;
 }
 
-function renderCards(items) {
+function renderCards(items, agrupar = false) {
   const query = searchInput.value.trim();
 
   const tabs = `
@@ -351,6 +397,13 @@ function renderCards(items) {
       <input type="checkbox" id="verTodosCheck" class="h-5 w-5 cursor-pointer accent-green-700" ${verTodos ? 'checked' : ''}>
       <label for="verTodosCheck" class="cursor-pointer text-sm font-medium text-slate-700">Ver todos los horarios</label>
       <span id="contadorHorarios" class="ml-auto text-xs text-slate-500"></span>
+    </div>
+    <div id="franjaFiltros" class="mb-4 flex flex-wrap gap-2">
+      <button type="button" class="franja-btn ${franjaSeleccionada === 'todas' ? 'active' : ''}" data-franja="todas">Todas</button>
+      <button type="button" class="franja-btn ${franjaSeleccionada === '06:30-08:45' ? 'active' : ''}" data-franja="06:30-08:45">6:30-8:45</button>
+      <button type="button" class="franja-btn ${franjaSeleccionada === '09:00-11:15' ? 'active' : ''}" data-franja="09:00-11:15">9:00-11:15</button>
+      <button type="button" class="franja-btn ${franjaSeleccionada === '11:30-13:30' ? 'active' : ''}" data-franja="11:30-13:30">11:30-13:30</button>
+      <button type="button" class="franja-btn ${franjaSeleccionada === '13:45-16:00' ? 'active' : ''}" data-franja="13:45-16:00">1:45-4:00</button>
     </div>`;
 
   resultCount.textContent = `${items.length} resultado${items.length === 1 ? '' : 's'}`;
@@ -358,12 +411,23 @@ function renderCards(items) {
     cardsContainer.innerHTML = `${tabs}
       <p class="text-center text-slate-500 py-8">No se encontraron resultados para "${query}"</p>
     `;
+    const counter = document.getElementById('contadorHorarios');
+    if (counter) counter.textContent = `${items.length} horarios`;
     return;
   }
 
-  cardsContainer.innerHTML = `${tabs}
-    ${query ? `<div class="col-span-full mb-1 text-sm text-slate-500"><strong class="text-slate-900">${items.length}</strong> resultado(s) para <strong class="text-blue-600">${query}</strong></div>` : ''}
-    ${items
+  const groups = agrupar
+    ? [...items.reduce((grouped, item) => {
+      const key = `${item.horaInicio} - ${item.horaFin}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(item);
+      return grouped;
+    }, new Map())].sort(([first], [second]) => minutesFromTime(first.split(' - ')[0]) - minutesFromTime(second.split(' - ')[0]))
+    : [['', items]];
+
+  const cardsMarkup = groups.map(([franja, groupItems]) => `
+    ${agrupar ? `<h3 class="franja-titulo col-span-full">${formatHora(groupItems[0].horaInicio)} - ${formatHora(groupItems[0].horaFin)} <span>(${groupItems.length} módulos)</span></h3>` : ''}
+    ${groupItems
     .map((item) => {
       const program = item.programa || item.carrera || item.materia?.programa || 'Sin programa';
       const module = item.modulo || item.materia?.nombre || 'Sin módulo';
@@ -411,7 +475,14 @@ function renderCards(items) {
       `;
     })
     .join('')}
+  `).join('');
+
+  cardsContainer.innerHTML = `${tabs}
+    ${query ? `<div class="col-span-full mb-1 text-sm text-slate-500"><strong class="text-slate-900">${items.length}</strong> resultado(s) para <strong class="text-blue-600">${query}</strong></div>` : ''}
+    ${cardsMarkup}
   `;
+  const counter = document.getElementById('contadorHorarios');
+  if (counter) counter.textContent = `${items.length} horarios`;
 
   cardsContainer.querySelectorAll('[data-open]').forEach((button) => {
     button.addEventListener('click', () => openModal(button.dataset.open));
@@ -505,7 +576,7 @@ function renderTeachers() {
 }
 
 function render() {
-  renderCards(getFilteredSchedule());
+  renderCards(getFilteredSchedule(), franjaSeleccionada === 'todas');
   renderTeachers();
 }
 
@@ -664,6 +735,13 @@ searchInput.addEventListener('input', scheduleSearch);
 cardsContainer.addEventListener('change', (event) => {
   if (event.target.id !== 'verTodosCheck') return;
   verTodos = event.target.checked;
+  render();
+});
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('.franja-btn');
+  if (!button) return;
+  franjaSeleccionada = button.dataset.franja;
+  document.querySelectorAll('.franja-btn').forEach((item) => item.classList.toggle('active', item === button));
   render();
 });
 searchInput.addEventListener('focus', () => {
