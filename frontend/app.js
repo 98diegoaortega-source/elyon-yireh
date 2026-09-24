@@ -17,7 +17,6 @@ const careerFilter = document.getElementById('careerFilter');
 const roomFilter = document.getElementById('roomFilter');
 const cardsContainer = document.getElementById('cardsContainer');
 const teachersContainer = document.getElementById('teachersContainer');
-const calendarContainer = document.getElementById('calendarContainer');
 const modal = document.getElementById('modal');
 const modalContent = document.getElementById('modalContent');
 const modalTitle = document.getElementById('modalTitle');
@@ -43,9 +42,6 @@ const forceRefreshButton = document.getElementById('forceRefreshButton');
 const searchHistory = document.getElementById('searchHistory');
 const statistics = document.getElementById('statistics');
 const pwaSplash = document.getElementById('pwaSplash');
-const calendarButton = document.getElementById('calendarButton');
-const closeCalendarButton = document.getElementById('closeCalendarButton');
-const visualCalendar = document.getElementById('visualCalendar');
 const chatButton = document.getElementById('chatButton');
 const chatPanel = document.getElementById('chatPanel');
 const closeChatButton = document.getElementById('closeChatButton');
@@ -68,8 +64,8 @@ const FAVORITES_KEY = 'elyon_favorites';
 const LANGUAGE_KEY = 'elyon_lang';
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'es';
 const translations = {
-  es: { favorites: 'Mis favoritos', clearFavorites: 'Limpiar favoritos', searcher: 'Buscador', clear: 'Limpiar', teacherOrQuery: 'Profesor o consulta', program: 'Programa', schedule: 'Horario', date: 'Fecha o periodo', search: 'Buscar', results: 'Resultados', details: 'Ver detalles', addCalendar: 'Añadir a Calendar', share: 'Compartir' },
-  en: { favorites: 'My favorites', clearFavorites: 'Clear favorites', searcher: 'Search', clear: 'Clear', teacherOrQuery: 'Teacher or query', program: 'Program', schedule: 'Schedule', date: 'Date or period', search: 'Search', results: 'Results', details: 'View details', addCalendar: 'Add to Calendar', share: 'Share' }
+  es: { favorites: 'Mis favoritos', clearFavorites: 'Limpiar favoritos', searcher: 'Buscador', clear: 'Limpiar', teacherOrQuery: 'Profesor o consulta', program: 'Programa', schedule: 'Horario', date: 'Fecha o periodo', search: 'Buscar', results: 'Resultados', details: 'Ver detalles', share: 'Compartir' },
+  en: { favorites: 'My favorites', clearFavorites: 'Clear favorites', searcher: 'Search', clear: 'Clear', teacherOrQuery: 'Teacher or query', program: 'Program', schedule: 'Schedule', date: 'Date or period', search: 'Search', results: 'Results', details: 'View details', share: 'Share' }
 };
 
 const revisarStyles = document.createElement('style');
@@ -201,16 +197,6 @@ function switchLanguage() {
   applyLanguage();
 }
 
-function addToGoogleCalendar(itemId) {
-  const item = state.allSchedule.find((entry) => entry.id === itemId);
-  if (!item) return;
-  const title = `Clase de ${item.materia?.nombre || 'materia'} con ${item.profesor?.nombre || 'docente'}`;
-  const details = `${item.carrera || item.materia?.programa || 'Programa'} · ${item.semestre || 'Semestre'} · ${item.fecha || ''} · ${item.horaInicio} - ${item.horaFin}`;
-  const location = item.salon?.nombre || 'Aula por asignar';
-  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`;
-  window.open(url, '_blank', 'noopener,noreferrer');
-}
-
 async function openAbout() {
   aboutModal.classList.remove('hidden');
 }
@@ -303,46 +289,6 @@ function matchesTimeQuery(query, schedule) {
   return normalizedSchedule.includes(`${hour}:${queryMatch[2]}`);
 }
 
-function getScheduleDays(schedule) {
-  if (!Array.isArray(schedule.fechas) || schedule.fechas.length === 0) {
-    return schedule.diaOriginal ? [schedule.diaOriginal] : [];
-  }
-
-  const hoy = new Date();
-  const dd = String(hoy.getDate()).padStart(2, '0');
-  const mm = String(hoy.getMonth() + 1).padStart(2, '0');
-  const yyyy = hoy.getFullYear();
-  const hoyStr = `${dd}/${mm}/${yyyy}`;
-
-  let entrada = schedule.fechas.find(f => f.fecha === hoyStr);
-  if (!entrada) {
-    entrada = schedule.fechas[0];
-  }
-
-  if (entrada && entrada.dia === 'Domingo') {
-    const idx = schedule.fechas.indexOf(entrada);
-    const siguiente = schedule.fechas.slice(idx + 1).find(f => f.dia !== 'Domingo');
-    if (siguiente) entrada = siguiente;
-    else return [];
-  }
-
-  return entrada ? [entrada.dia] : [];
-}
-
-function getAllScheduleDays(schedule) {
-  if (Array.isArray(schedule.fechas) && schedule.fechas.length > 0) {
-    return [...new Set(schedule.fechas.map((fecha) => fecha.dia).filter(Boolean))]
-      .filter((day) => day !== 'Domingo');
-  }
-  return schedule.diaOriginal && schedule.diaOriginal !== 'Domingo'
-    ? [schedule.diaOriginal]
-    : [];
-}
-
-function getScheduleDaysText(schedule) {
-  return getScheduleDays(schedule).join(', ');
-}
-
 function limpiarFecha(fecha) {
   if (!fecha) return '';
   return String(fecha).replace(/\s*[A-Z]\s*$/, '').trim();
@@ -366,7 +312,6 @@ function coincideConBusqueda(item, termino) {
     item.salon?.nombre,
     item.modalidad,
     item.fecha,
-    getScheduleDaysText(item),
     item.horaInicio,
     item.horaFin
   ];
@@ -409,10 +354,7 @@ function renderCards(items) {
     </div>`;
 
   resultCount.textContent = `${items.length} resultado${items.length === 1 ? '' : 's'}`;
-  calendarButton.classList.remove('hidden');
-
   if (!items.length) {
-    calendarButton.classList.add('hidden');
     cardsContainer.innerHTML = `${tabs}
       <p class="text-center text-slate-500 py-8">No se encontraron resultados para "${query}"</p>
     `;
@@ -452,10 +394,6 @@ function renderCards(items) {
               <strong class="text-right text-slate-900">${item.horaInicio} - ${item.horaFin}</strong>
             </div>
             <div class="flex items-center justify-between gap-2">
-              <span class="text-slate-400">Día</span>
-              <strong class="text-right text-slate-900">${getScheduleDaysText(item) || 'Por confirmar'}</strong>
-            </div>
-            <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">Fecha</span>
               <strong class="text-right text-slate-900">${limpiarFecha(item.fecha) || 'Por confirmar'}</strong>
             </div>
@@ -469,7 +407,6 @@ function renderCards(items) {
           <button type="button" class="share-whatsapp mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-green-200 px-4 py-2.5 text-sm font-semibold text-green-700" data-share="${item.id}">
             <i class="ph ph-whatsapp-logo"></i> ${translations[currentLanguage].share}
           </button>
-          <button type="button" class="calendar-card-button mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-200 px-4 py-2.5 text-sm font-semibold text-blue-700" data-calendar="${item.id}">📅 ${translations[currentLanguage].addCalendar}</button>
         </article>
       `;
     })
@@ -484,9 +421,6 @@ function renderCards(items) {
   });
   cardsContainer.querySelectorAll('[data-favorite]').forEach((button) => {
     button.addEventListener('click', () => toggleFavorite(button.dataset.favorite));
-  });
-  cardsContainer.querySelectorAll('[data-calendar]').forEach((button) => {
-    button.addEventListener('click', () => addToGoogleCalendar(button.dataset.calendar));
   });
 }
 
@@ -505,24 +439,6 @@ function minutesFromTime(value) {
   if (meridiem === 'PM' && hour < 12) hour += 12;
   if (meridiem === 'AM' && hour === 12) hour = 0;
   return hour * 60 + Number(match[2]);
-}
-
-function renderVisualCalendar(items) {
-  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  const columns = days.map((day) => {
-    const events = items.filter((item) => getAllScheduleDays(item).some((itemDay) => normalize(itemDay) === normalize(day)));
-    const eventMarkup = events.map((item) => {
-      const start = Math.max(360, minutesFromTime(item.horaInicio));
-      const end = Math.max(start + 30, minutesFromTime(item.horaFin));
-      const top = ((start - 360) / 60) * 60;
-      const height = Math.max(34, ((end - start) / 60) * 60);
-      return `<button type="button" class="calendar-event" style="top:${top}px;height:${height}px" data-open="${item.id}"><strong>${item.materia?.nombre || item.carrera || 'Clase'}</strong><span>${item.horaInicio} - ${item.horaFin}</span><small>${item.salon?.nombre || 'Aula'}</small></button>`;
-    }).join('');
-    const slots = Array.from({ length: 12 }, (_, index) => `<span class="calendar-slot" style="top:${index * 60}px"></span>`).join('');
-    return `<div class="calendar-day-column"><div class="calendar-day-heading">${day}</div><div class="calendar-track">${slots}${eventMarkup}</div></div>`;
-  }).join('');
-  visualCalendar.innerHTML = `<div class="calendar-columns">${columns}</div>`;
-  visualCalendar.querySelectorAll('[data-open]').forEach((button) => button.addEventListener('click', () => openModal(button.dataset.open)));
 }
 
 function addChatMessage(text, role) {
@@ -588,48 +504,8 @@ function renderTeachers() {
     .join('');
 }
 
-function renderCalendar(items) {
-  const days = [...new Set(items.flatMap((item) => getAllScheduleDays(item)))]
-    .filter(Boolean)
-    .map((day) => ({
-      day,
-      items: items.filter((item) => getAllScheduleDays(item).some((itemDay) => normalize(itemDay) === normalize(day)))
-    }));
-
-  calendarContainer.innerHTML = days
-    .map((dayData) => {
-      return `
-        <div class="day-column glass rounded-2xl p-3">
-          <div class="mb-3 text-center text-sm font-semibold text-slate-200">${dayData.day}</div>
-          <div class="space-y-3">
-            ${dayData.items.length ? dayData.items.map((item) => {
-              const accentClass = item.materia?.color || 'from-slate-500 to-slate-700';
-              return `
-                <div class="class-block rounded-2xl bg-gradient-to-br ${accentClass} p-3 text-left text-white shadow-lg" data-open="${item.id}">
-                  <div class="text-[11px] uppercase tracking-[0.14em] text-white/80">${item.carrera || item.materia?.programa || 'Programa'}</div>
-                  <div class="mt-2 text-sm font-semibold">${item.salon?.nombre}</div>
-                  <div class="mt-2 text-xs text-white/80">${item.horaInicio} - ${item.horaFin}</div>
-                  <div class="mt-1 text-xs text-white/80">${item.salon?.nombre}</div>
-                </div>
-              `;
-            }).join('') : '<div class="rounded-xl border border-dashed border-slate-700 p-3 text-center text-xs text-slate-400">Libre</div>'}
-          </div>
-        </div>
-      `;
-    })
-    .join('');
-
-  calendarContainer.querySelectorAll('[data-open]').forEach((block) => {
-    block.addEventListener('click', () => openModal(block.dataset.open));
-  });
-}
-
 function render() {
-  const filtered = getFilteredSchedule();
-  renderCards(filtered);
-  const counter = document.getElementById('contadorHorarios');
-  if (counter) counter.textContent = `${filtered.length} horarios`;
-  renderCalendar(filtered);
+  renderCards(getFilteredSchedule());
   renderTeachers();
 }
 
@@ -652,10 +528,6 @@ function buildModalContent(item) {
       </div>
 
       <div class="grid gap-3 md:grid-cols-2">
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-          <div class="text-[10px] uppercase tracking-[0.18em] text-slate-400">Día y horario</div>
-          <div class="mt-2 font-semibold text-slate-900">${getAllScheduleDays(item).join(', ') || 'Día por confirmar'} · ${item.horaInicio} - ${item.horaFin}</div>
-        </div>
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
           <div class="text-[10px] uppercase tracking-[0.18em] text-slate-400">Salón</div>
           <div class="mt-2 font-semibold text-slate-900">${item.salon?.nombre} · ${item.salon?.edificio}</div>
@@ -851,15 +723,6 @@ closeAboutButton.addEventListener('click', closeAbout);
 closeAboutFooter.addEventListener('click', closeAbout);
 aboutModal.addEventListener('click', (event) => { if (event.target === aboutModal) closeAbout(); });
 
-calendarButton.addEventListener('click', () => {
-  renderVisualCalendar(getFilteredSchedule());
-  document.getElementById('tarjetasView').classList.add('hidden');
-  document.getElementById('calendarView').classList.remove('hidden');
-});
-closeCalendarButton.addEventListener('click', () => {
-  document.getElementById('calendarView').classList.add('hidden');
-  document.getElementById('tarjetasView').classList.remove('hidden');
-});
 chatButton.addEventListener('click', () => { chatPanel.classList.add('is-open'); chatInput.focus(); });
 closeChatButton.addEventListener('click', () => chatPanel.classList.remove('is-open'));
 chatForm.addEventListener('submit', (event) => {
