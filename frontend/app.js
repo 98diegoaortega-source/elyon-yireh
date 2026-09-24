@@ -329,6 +329,16 @@ function getScheduleDays(schedule) {
   return entrada ? [entrada.dia] : [];
 }
 
+function getAllScheduleDays(schedule) {
+  if (Array.isArray(schedule.fechas) && schedule.fechas.length > 0) {
+    return [...new Set(schedule.fechas.map((fecha) => fecha.dia).filter(Boolean))]
+      .filter((day) => day !== 'Domingo');
+  }
+  return schedule.diaOriginal && schedule.diaOriginal !== 'Domingo'
+    ? [schedule.diaOriginal]
+    : [];
+}
+
 function getScheduleDaysText(schedule) {
   return getScheduleDays(schedule).join(', ');
 }
@@ -500,7 +510,7 @@ function minutesFromTime(value) {
 function renderVisualCalendar(items) {
   const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   const columns = days.map((day) => {
-    const events = items.filter((item) => getScheduleDays(item).some((itemDay) => normalize(itemDay) === normalize(day)));
+    const events = items.filter((item) => getAllScheduleDays(item).some((itemDay) => normalize(itemDay) === normalize(day)));
     const eventMarkup = events.map((item) => {
       const start = Math.max(360, minutesFromTime(item.horaInicio));
       const end = Math.max(start + 30, minutesFromTime(item.horaFin));
@@ -579,11 +589,11 @@ function renderTeachers() {
 }
 
 function renderCalendar(items) {
-  const days = [...new Set(items.flatMap((item) => getScheduleDays(item)))]
+  const days = [...new Set(items.flatMap((item) => getAllScheduleDays(item)))]
     .filter(Boolean)
     .map((day) => ({
       day,
-      items: items.filter((item) => getScheduleDays(item).some((itemDay) => normalize(itemDay) === normalize(day)))
+      items: items.filter((item) => getAllScheduleDays(item).some((itemDay) => normalize(itemDay) === normalize(day)))
     }));
 
   calendarContainer.innerHTML = days
@@ -644,7 +654,7 @@ function buildModalContent(item) {
       <div class="grid gap-3 md:grid-cols-2">
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
           <div class="text-[10px] uppercase tracking-[0.18em] text-slate-400">Día y horario</div>
-          <div class="mt-2 font-semibold text-slate-900">${getScheduleDaysText(item) || 'Día por confirmar'} · ${item.horaInicio} - ${item.horaFin}</div>
+          <div class="mt-2 font-semibold text-slate-900">${getAllScheduleDays(item).join(', ') || 'Día por confirmar'} · ${item.horaInicio} - ${item.horaFin}</div>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
           <div class="text-[10px] uppercase tracking-[0.18em] text-slate-400">Salón</div>
