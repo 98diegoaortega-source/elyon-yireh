@@ -325,29 +325,32 @@ function limpiarFecha(fecha) {
   return String(fecha).replace(/\s*[A-Z]\s*$/, '').trim();
 }
 
-function coincideConBusqueda(item, termino) {
-  if (!termino) return true;
 
-  const t = normalize(termino.trim());
+function normalizeTexto(str) {
+  return String(str || '')
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}function coincideConBusqueda(item, termino) {
+  if (!termino) return true;
+  const t = normalizeTexto(termino);
   const campos = [
     item.docente,
-    item.modulo,
-    item.programa,
-    item.aula,
-    item.codigo,
-    item.carrera,
-    item.semestre,
-    item.materia?.nombre,
-    item.materia?.programa,
     item.profesor?.nombre,
+    item.modulo,
+    item.nombreModulo,
+    item.programa,
+    item.carrera,
+    item.aula,
     item.salon?.nombre,
-    item.modalidad,
-    item.fecha,
-    item.horaInicio,
-    item.horaFin
+    item.codigo,
+    item.codigoModulo,
+    item.semestre,
+    item.corte,
+    item.modalidad
   ];
-
-  return campos.some((campo) => campo && normalize(campo).includes(t));
+  return campos.some(c => c && normalizeTexto(c).includes(t));
 }
 
 function formatHora(hhmm) {
@@ -454,18 +457,33 @@ function renderCards(items, agrupar = false) {
 
           <div class="space-y-2 text-sm text-slate-300">
             <div class="flex items-center justify-between gap-2">
-              <span class="text-slate-400">Horario</span>
+              <span class="text-slate-400">AULA#</span>
+              <strong class="text-right text-slate-900">${classroom}</strong>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-400">HORARIO</span>
               <strong class="text-right text-slate-900">${item.horaInicio} - ${item.horaFin}</strong>
             </div>
             <div class="flex items-center justify-between gap-2">
-              <span class="text-slate-400">Fecha</span>
-              <strong class="text-right text-slate-900">${limpiarFecha(item.fecha) || 'Por confirmar'}</strong>
+              <span class="text-slate-400">PROGRAMA</span>
+              <strong class="text-right text-slate-900">${program}</strong>
             </div>
             <div class="flex items-center justify-between gap-2">
-              <span class="text-slate-400">Salón</span>
-              <strong class="text-slate-900">${classroom}</strong>
+              <span class="text-slate-400">SEMESTRE</span>
+              <strong class="text-right text-slate-900">${item.semestre || '—'}</strong>
             </div>
-            ${item.estudiantes > 0 ? `<div class="flex items-center justify-between gap-2"><span class="text-slate-400">Estudiantes</span><strong class="text-slate-900">${item.estudiantes} estudiantes</strong></div>` : ''}
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-400">CORTE#4</span>
+              <strong class="text-right text-slate-900">${item.corte || '—'}</strong>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-400">NOMBRE DE MODULO 4</span>
+              <strong class="text-right text-slate-900">${module}</strong>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-400">DOCENTE</span>
+              <strong class="text-right text-slate-900">${teacher}</strong>
+            </div>
           </div>
 
           <button type="button" class="share-whatsapp mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-green-200 px-4 py-2.5 text-sm font-semibold text-green-700" data-share="${item.id}">
