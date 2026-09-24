@@ -60,302 +60,6 @@ const estudiantes = [
   { id: 'est-001', nombre: 'Estudiante demo', carrera: 'Todos los programas', semestre: 'Corte 4' }
 ];
 
-const profesoresImagen = [
-  'MILLER ARZUZA',
-  'HERNANDO LUIS GUZMAN ORTEGA',
-  'RICHARD WILCHES',
-  'YESITH DANIEL CARVAJALINO',
-  'GLORIA AMADOR',
-  'RAFAEL BAUTISTA',
-  'ELADIO BLANQUETT RAMIREZ',
-  'ADOLFO ACUNA',
-  'JARO GOMEZ',
-  'BELTIS LORA',
-  'MERCEDES OSORIO',
-  'JOSE TARA'
-].map((nombre, index) => ({
-  id: `img-prof-${index + 1}`,
-  nombre,
-  email: `${nombre.toLowerCase().replace(/[^a-z]+/g, '.').replace(/^\.|\.$/g, '')}@instituto.edu.co`,
-  telefono: 'Contacto institucional',
-  departamento: 'Modulo 4',
-  oficina: 'Coordinacion academica',
-  horarioAtencion: 'Consultar disponibilidad',
-  foto: nombre.split(' ').map((part) => part[0]).join('').slice(0, 2),
-  color: 'from-blue-500 to-indigo-600'
-}));
-
-const materiasImagen = [
-  ['OBRAS CIVILES', 'MILLER ARZUZA'],
-  ['REPARACION DE LOS SISTEMAS DE COMBUSTIBLES DIESEL I', 'HERNANDO LUIS GUZMAN ORTEGA'],
-  ['METROLOGIA INDUSTRIAL', 'RICHARD WILCHES'],
-  ['SISOISISO I', 'YESITH DANIEL CARVAJALINO'],
-  ['PRIMEROS AUXILIOS', 'GLORIA AMADOR'],
-  ['DOCUMENTACION', 'RAFAEL BAUTISTA'],
-  ['PROCEDIMIENTOS OPERACIONALES DE MONTACARGA I', 'ELADIO BLANQUETT RAMIREZ'],
-  ['PROCEDIMIENTOS OPERACIONALES DE RETROESCABADORA PAJARITA 2', 'ELADIO BLANQUETT RAMIREZ'],
-  ['ANIMACION DE TELEVISION', 'ADOLFO ACUNA'],
-  ['APRECIACION MUSICAL', 'JARO GOMEZ'],
-  ['ARCHIVO Y CORRESPONDENCIA', 'BELTIS LORA'],
-  ['GEOPROYECCION DE PROYECTOS', 'MERCEDES OSORIO'],
-  ['PLANEACION Y POLITICA PUBLICA Y SOCIAL', 'MERCEDES OSORIO'],
-  ['NIVEL 10', 'JOSE TARA']
-].map(([nombre], index) => ({
-  id: `img-mat-${index + 1}`,
-  nombre,
-  codigo: `MOD4-${String(index + 1).padStart(2, '0')}`,
-  programa: 'Modulo 4',
-  creditos: 0,
-  departamento: 'Modulo 4',
-  color: 'from-blue-500 to-indigo-500'
-}));
-
-const salonesImagen = ['405', 'MECANICA DIESEL', '6D', '702', '703', '501B', 'MAQUINARIA PESADA', '701B', '701A', '301A', '402A', '6E']
-  .map((nombre, index) => ({ id: `img-salon-${index + 1}`, nombre, edificio: 'Sede principal', tipo: 'Aula' }));
-
-const estudiantesImagen = [{ id: 'est-001', nombre: 'Estudiante demo', carrera: 'Todos los programas', semestre: 'Corte 4' }];
-
-const filasImagen = [
-  ['405', 'OBRAS CIVILES', '1 SEM', 1, 'MILLER ARZUZA'],
-  ['405', 'OBRAS CIVILES', '2 SEM', 1, 'MILLER ARZUZA'],
-  ['405', 'OBRAS CIVILES', '3 SEM', 1, 'MILLER ARZUZA'],
-  ['405', 'OBRAS CIVILES', '4 SEM', 1, 'MILLER ARZUZA'],
-  ['MECANICA DIESEL', 'REPARACION DE LOS SISTEMAS DE COMBUSTIBLES DIESEL I', '2 SEM', 2, 'HERNANDO LUIS GUZMAN ORTEGA'],
-  ['MECANICA DIESEL', 'REPARACION DE LOS SISTEMAS DE COMBUSTIBLES DIESEL I', '3 SEM', 2, 'HERNANDO LUIS GUZMAN ORTEGA'],
-  ['6D', 'METROLOGIA INDUSTRIAL', '2 SEM', 3, 'RICHARD WILCHES'],
-  ['6D', 'METROLOGIA INDUSTRIAL', '3 SEM', 3, 'RICHARD WILCHES'],
-  ['6D', 'METROLOGIA INDUSTRIAL', '4 SEM', 3, 'RICHARD WILCHES'],
-  ['702', 'SISOISISO I', '1 SEM', 4, 'YESITH DANIEL CARVAJALINO'],
-  ['703', 'PRIMEROS AUXILIOS', '3 SEM', 5, 'GLORIA AMADOR'],
-  ['703', 'PRIMEROS AUXILIOS', '4 SEM', 5, 'GLORIA AMADOR'],
-  ['501B', 'DOCUMENTACION', '2 SEM', 6, 'RAFAEL BAUTISTA'],
-  ['501B', 'DOCUMENTACION', '3 SEM', 6, 'RAFAEL BAUTISTA'],
-  ['MAQUINARIA PESADA', 'PROCEDIMIENTOS OPERACIONALES DE MONTACARGA I', '1 SEM', 7, 'ELADIO BLANQUETT RAMIREZ'],
-  ['MAQUINARIA PESADA', 'PROCEDIMIENTOS OPERACIONALES DE RETROESCABADORA PAJARITA 2', '2 SEM', 8, 'ELADIO BLANQUETT RAMIREZ'],
-  ['701B', 'ANIMACION DE TELEVISION', '1 SEM', 9, 'ADOLFO ACUNA'],
-  ['701B', 'ANIMACION DE TELEVISION', '2 SEM', 9, 'ADOLFO ACUNA'],
-  ['701B', 'ANIMACION DE TELEVISION', '3 SEM', 9, 'ADOLFO ACUNA'],
-  ['701B', 'ANIMACION DE TELEVISION', '4 SEM', 9, 'ADOLFO ACUNA'],
-  ['701A', 'APRECIACION MUSICAL', '1 SEM', 10, 'JARO GOMEZ'],
-  ['701A', 'APRECIACION MUSICAL', '2 SEM', 10, 'JARO GOMEZ'],
-  ['301A', 'ARCHIVO Y CORRESPONDENCIA', '1 SEM', 11, 'BELTIS LORA'],
-  ['301A', 'ARCHIVO Y CORRESPONDENCIA', '2 SEM', 11, 'BELTIS LORA'],
-  ['301A', 'ARCHIVO Y CORRESPONDENCIA', '3 SEM', 11, 'BELTIS LORA'],
-  ['402A', 'GEOPROYECCION DE PROYECTOS', '1 SEM', 12, 'MERCEDES OSORIO'],
-  ['402A', 'PLANEACION Y POLITICA PUBLICA Y SOCIAL', '2 SEM', 13, 'MERCEDES OSORIO'],
-  ['6E', 'NIVEL 10', '2 SEM', 14, 'JOSE TARA']
-];
-
-const horariosImagen = filasImagen.map(([salon, materia, semestre, materiaNumero, profesor], index) => ({
-  id: `img-hor-${index + 1}`,
-  materiaId: `img-mat-${materiasImagen.findIndex((item) => item.nombre === materia) + 1}`,
-  profesorId: `img-prof-${profesoresImagen.findIndex((item) => item.nombre === profesor) + 1}`,
-  salonId: `img-salon-${salonesImagen.findIndex((item) => item.nombre === salon) + 1}`,
-  dia: 'Corte 4',
-  fecha: '05 al 19 de septiembre de 2026',
-  horaInicio: '06:45',
-  horaFin: '12:15',
-  modalidad: 'Semipresencial',
-  corte: 'MOD#4',
-  carrera: salon === '405' ? 'Obras Civiles' : salon === 'MECANICA DIESEL' ? 'Mecanica Diesel' : salon === '6D' ? 'Mecanica Industrial' : salon === '702' || salon === '703' ? 'Seguridad Ocupacional' : salon === '501B' || salon === 'MAQUINARIA PESADA' ? 'Montacarga' : salon === '701B' ? 'Locucion Radio y TV' : salon === '701A' ? 'Audio Digital' : salon === '301A' ? 'Aux de Tribunales' : salon === '402A' ? 'Trabajo Social' : 'Lengua Inglesa',
-  semestre,
-  estudianteIds: ['est-001']
-}));
-
-const filasNuevas = [
-  ['301A', 'Enfermeria', 'ATENCION INTEGRAL A LA FAMILIA Y SU CONTEXTO', '1 SEM', 'YURANNY ORTIZ'],
-  ['4D', 'Enfermeria', 'EVALUACION DE LAS CONDICIONES FISICAS Y EMOCIONALES DE LAS PERSONAS II', '2 SEM', 'CAMILA MONTANO'],
-  ['502B', 'Enfermeria', 'EDUCAR A LA PAREJA EN SALUD SEXUAL Y REPRODUCTIVA', '4 SEM', 'CARMEN LORA'],
-  ['301B', 'Farmacia', 'BIOLOGIA I', '1 SEM', 'MARLENE MONTES CIFUENTES'],
-  ['3B', 'Farmacia', 'GRUPOS TERAPEUTICOS III', '2 SEM', 'ALEJANDRO RODELO'],
-  ['3A', 'Farmacia', 'DOSIS UNITARIAS', '3 SEM', 'MONICA RODRIGUEZ RODRIGUEZ'],
-  ['302B', 'Farmacia', 'SISTEMA DE GESTION Y CALIDAD EN LAS FARMACIAS', '4 SEM', 'VERONICA DAZA'],
-  ['1A', 'Salud Oral', 'ANATOMIA DENTAL I', '1 SEM', 'INDIRA ESPINOZA DUARTE'],
-  ['1A', 'Mecanica Dental', 'ANATOMIA DENTAL I', '1 SEM', 'INDIRA ESPINOZA DUARTE'],
-  ['COSMETOLOGIA', 'Cosmetologia', 'BIOSEGURIDAD', '1 SEM', 'LUZ ANYELI QUINTERO RODRIGUEZ'],
-  ['4A', 'Cosmetologia', 'TECNICAS CORPORALES II', '2 SEM', 'KELLYS LAGARES'],
-  ['4A', 'Cosmetologia', 'TECNICAS CORPORALES II', '4 SEM', 'KELLYS LAGARES'],
-  ['401A', 'Clinica Veterinaria', 'ANATOMIA Y FISIOLOGIA ANIMAL', '1 SEM', 'JENNIFER DEL VALLE RANDIAL'],
-  ['303', 'Admon de Empresas-RRHH-Salud', 'ADMINISTRACION GENERAL', '1 SEM', 'JEISON JIMENEZ'],
-  ['502A', 'Admon de Empresas-RRHH-Salud', 'GESTION DEL TALENTO HUMANO II', '3 SEM', 'LIBIA COLMENARES QUINTANA'],
-  ['401B', 'Admon de Empresas-RRHH-Salud', 'SOFTWARE ADMINISTRATIVO I', '4 SEM', 'PEDRO BALDOVINO MARTINEZ'],
-  ['303', 'Admos Salud', 'ADMINISTRACION GENERAL', '1 SEM', 'JEISON JIMENEZ'],
-  ['2E', 'Admos Salud', 'PRIMEROS AUXILIOS', '4 SEM', 'BELTIS LORA'],
-  ['4E', 'Aux Contable', 'CONTABILIDAD DE ACTIVO', '1 SEM', 'CRISTIAN AROCA'],
-  ['4E', 'Aux Contable', 'CONTABILIDAD DE ACTIVO', '3 SEM', 'CRISTIAN AROCA'],
-  ['602', 'Naviera-Logistica-Comercio', 'INTRODUCCION Y ACUERDOS COMERCIALES', '1 SEM', 'CASTOR RAMIREZ'],
-  ['501A', 'Mercadeo y Ventas', 'MERCHANDISING', '1 SEM', 'LAURA LINDO'],
-  ['501A', 'Mercadeo y Ventas', 'MERCHANDISING', '2 SEM', 'LAURA LINDO'],
-  ['106', 'Primera Infancia', 'FUNDAMENTOS DE LA EDUCACION', '1 SEM', 'OTILIA RIVAS VALDIES'],
-  ['402B', 'Aux Vuelo', 'HIGIENE Y SEGURIDAD', '4 SEM', 'HORTENSIA HERRERA VILLA'],
-  ['2D', 'Cocina Nac e Inter', 'HIGIENE Y SEGURIDAD', '1 SEM', 'HORTENSIA HERRERA VILLA'],
-  ['2D', 'Cocina Nac e Inter', 'PROXIMO MODULO', '4 SEM', 'DOCENTE POR ASIGNAR'],
-  ['302A', 'Diseño y Corte de Modas', 'ABRASCERIOS', '1 SEM', 'LAURA ARZUZA'],
-  ['MODA', 'Diseño y Corte de Modas', 'CONFECCION I', '4 SEM', 'AZALEA ELJACH'],
-  ['SISTEMAS 2', 'Sistemas-Software', 'INTRODUCCION A LOS COMPUTADORES', '1 SEM', 'JULIO MATURANA'],
-  ['SISTEMAS 1', 'Sistemas-Software', 'BASE DE DATOS NOSQL', '3 SEM', 'RICHARD ARNEDO'],
-  ['ELECTRONICA 1', 'Electronica', 'RESISTENCIAS Y CONDENSADORES', '1 SEM', 'XAVIER EGEA'],
-  ['ELECTRONICA 1', 'Electronica', 'REDES HFC', '3 SEM', 'XAVIER EGEA'],
-  ['ELECTRONICA 1', 'Electronica', 'REDES HFC', '4 SEM', 'XAVIER EGEA'],
-  ['402A', 'Electricidad', 'MATERIALES Y HERRAMIENTAS ELECTRICAS', '1 SEM', 'MILLER ARZUZA'],
-  ['402A', 'Electricidad', 'MATERIALES Y HERRAMIENTAS ELECTRICAS', '2 SEM', 'MILLER ARZUZA'],
-  ['501B', 'Electricidad', 'APLICACION E INSTALACION DE ENERGIA SOLAR FOTOVOLTAICA', '1 SEM', 'CARLOS ALBERTO NIEVES'],
-  ['REFRIGERACION', 'Refrigeracion', 'ELECTRICIDAD I', '1 SEM', 'IVAN SEVILLA MONTERROSA'],
-  ['SOLDADURA', 'Soldadura', 'NORMATIVIDAD UTILIZADA PARA LA PROTECCION EN LOS PROCESOS DE SOLDADURA', '1 SEM', 'XIOMARA OSORIO ALTAMAR'],
-  ['MECANICA DIESEL', 'Mecanica Diesel', 'REPARAR MOTORES DIESEL I', '1 SEM', 'HERNANDO LUIS GUZMAN ORTEGA'],
-  ['103', 'Mecanica Diesel', 'DIAGNOSTICO DE MOTORES DIESEL VI', '4 SEM', 'JUAN CONDE'],
-  ['6D', 'Mecanica Industrial', 'MANTENIMIENTO INDUSTRIAL Y SUS TIPOS', '1 SEM', 'RICHARD WILCHES'],
-  ['702', 'Seguridad Ocupacional', 'SISOISISO I', '1 SEM', 'YESITH DANIEL CARVAJALINO'],
-  ['703', 'Seguridad Ocupacional', 'PRIMEROS AUXILIOS', '2 SEM', 'GLORIA AMADOR'],
-  ['703', 'Seguridad Ocupacional', 'PRIMEROS AUXILIOS', '4 SEM', 'GLORIA AMADOR'],
-  ['6A', 'Montacarga', 'MANIPULACION MANUAL DE CARGA', '1 SEM', 'RAFAEL BAUTISTA'],
-  ['MAQUINARIA PESADA', 'Maquinaria Pesada', 'PROCEDIMIENTOS OPERACIONALES DE MONTACARGA I', '1 SEM', 'ELADIO BLANQUETT RAMIREZ'],
-  ['MAQUINARIA PESADA', 'Maquinaria Pesada', 'PROCEDIMIENTOS OPERACIONALES DE RETROESCABADORA PAJARITA 2', '2 SEM', 'ELADIO BLANQUETT RAMIREZ'],
-  ['6B', 'Lengua Inglesa', 'NIVEL 2', '1 SEM', 'JOSE TARA'],
-  ['6C', 'Ingles Tecnico Niveles', 'NIVEL 4', 'COMBI SEM', 'DANA VANESSA ARENAS YI'],
-  ['104', 'Ingles Tecnico Niveles', 'NIVEL 1', 'COMBI SEM', 'JEISON YEPES']
-];
-
-const filasCorte5 = [
-  ['604', 'CLINICA VETERINARIA', 'E-AFANPRIMEROS AUXILIOS VETERINARIOS', '1 SEM', 'JENNIFER DEL VALLE RANDIAL', '1:45 PM', '4:00 PM'],
-  ['604', 'CLINICA VETERINARIA', 'E-PARACIPARACITOLOGIA', '2 SEM', 'JENNIFER DEL VALLE RANDIAL', '11:30 AM', '1:30 PM'],
-  ['3A', 'ENFERMERIA', 'E-OUNOSORIENTAR AL USUARIO EN LAS NORMAS DE SALUD', '1 SEM', '', '9:00 AM', '11:15 AM'],
-  ['104', 'ENFERMERIA', 'E-CONIUECONTROLAR LAS INFECCIONES EN LOS USUARIOS Y SU ENTORNO', '2 SEM', 'MARLLY LOPEZ', '9:00 AM', '11:15 AM'],
-  ['601A', 'ENFERMERIA', 'CUIDAR INTEGRALMENTE A LA PAREJA EN EL EMBARAZO Y EL PARTO', '4 SEM', 'ARIEL PUELLO', '9:00 AM', '11:15 AM'],
-  ['502A', 'SALUD ORAL', 'PASA A LOS SABADOS AM', '3 SEM', '', '9:00 AM', '11:15 AM'],
-  ['502A', 'CLINICA VETERINARIA', 'E-SERVCLIESERVICIO AL CLIENTE', '3 SEM', 'CRISTIAN AROCA', '9:00 AM', '11:15 AM'],
-  ['602', 'NAVIERA-LOGISTICA-COMERCIO', 'PASA PARA LAS 6:30 AM', '1 SEM', '', '9:00 AM', '11:15 AM'],
-  ['702', 'NAVIERA-LOGISTICA-COMERCIO', 'E-RECDEMERECEPCIÓN Y DESPACHO DE LAS MERCANCÍAS', '2 SEM', 'LUCIA TERESA ELJACH MOSQUERA', '9:00 AM', '11:15 AM'],
-  ['501B', 'NAVIERA-LOGISTICA-COMERCIO', 'E-ZONFRAZONA FRANCA', '3 SEM', 'CASTOR RAMIREZ', '9:00 AM', '11:15 AM'],
-  ['2D', 'AUX VUELO', 'E-AGEVIAAGENCIA DE VIAJES I', '1 SEM', 'JEISON YEPES', '9:00 AM', '11:15 AM'],
-  ['2E', 'COCINA NAC E INTER', 'E-COCFRIACOCINA FRÍA I', '1 SEM', 'HORTENSIA HERRERA', '9:00 AM', '11:15 AM'],
-  ['501B', 'ENFERMERIA', 'E-CONIUECONTROLAR LAS INFECCIONES EN LOS USUARIOS Y SU ENTORNO', '2 SEM', 'KATIA VALENCIA', '6:30 AM', '8:45 AM'],
-  ['604', 'ENFERMERIA', 'CUIDAR INTEGRALMENTE A LA PAREJA EN EL EMBARAZO Y EL PARTO', '4 SEM', 'ARIEL PUELLO', '6:30 AM', '8:45 AM'],
-  ['3B', 'FARMACIA', 'E-BIOSEGBIOSEGURIDAD', '2 SEM', 'MONICA RODRIGUEZ RODRIGUEZ', '6:30 AM', '8:45 AM'],
-  ['3A', 'FARMACIA', 'E-PRIAUXPRIMEROS AUXILIOS', '3 SEM', 'LILIANA MANRIQUE', '6:30 AM', '8:45 AM'],
-  ['4A', 'COSMETOLOGIA', 'E-DEPIDEPILACIÓN I', '2 SEM', 'KETTY CAMPOS', '6:30 AM', '8:45 AM'],
-  ['601A', 'CLINICA VETERINARIA', 'PASA A SABADO PM', '3 SEM', '', '6:30 AM', '8:45 AM'],
-  ['602', 'NAVIERA-LOGISTICA-COMERCIO', 'E-RECDEMERECEPCIÓN Y DESPACHO DE LAS MERCANCÍAS', '2 SEM', 'CASTOR RAMIREZ', '6:30 AM', '8:45 AM'],
-  ['106', 'PRIMERA INFANCIA', 'E-LEGADULEGISLACIÓN ADUANERA', '2 SEM', 'LUCIA ELJACH', '6:30 AM', '8:45 AM'],
-  ['601B', 'AUX VUELO', 'E-PSIEVOPSICOLOGÍA EVOLUTIVA', '2 SEM', 'MARIA TERESA VARGAS', '6:30 AM', '8:45 AM'],
-  ['2E', 'COCINA NAC E INTER', 'T-MALMANIPULACIÓN DE ALIMENTOS', '2 SEM', 'JEISON YEPES', '6:30 AM', '8:45 AM'],
-  ['2D', 'COCINA NAC E INTER', 'E-COCCAICOCINA CALIENTE III', '3 SEM', 'NICOLAZA MEDINA', '6:30 AM', '8:45 AM'],
-  ['2D', 'COCINA NAC E INTER', 'E-COCINTICOCINA INTERNACIONAL II', '3 SEM', 'VICTOR ALCAZAR', '6:30 AM', '8:45 AM'],
-  ['SISTEMAS 1', 'DISEÑO GRAFICO', 'E-COMGRACOMPOSICIÓN GRÁFICA', '2 SEM', 'ADRIANA GAVIRIA', '6:30 AM', '8:45 AM'],
-  ['SISTEMAS 1', 'SISTEMAS-SOFTWARE', 'E-CPWCONSTRUCCIÓN Y MANTENIMIENTO DE PÁGINAS WEB', '2 SEM', 'JULIO MATURANA', '6:30 AM', '8:45 AM'],
-  ['MECANICA DIESEL', 'MECANICA DIESEL', 'E-RSIREPARACIÓN DE LOS SISTEMAS DE COMBUSTIBLES DIÉSEL II', '2 SEM', 'HERNANDO LUIS GUZMAN ORTEGA', '6:30 AM', '8:45 AM'],
-  ['MECANICA DIESEL', 'MECANICA DIESEL', 'E-RSIREPARACIÓN DE LOS SISTEMAS DE COMBUSTIBLES DIÉSEL II', '3 SEM', 'HERNANDO LUIS GUZMAN ORTEGA', '6:30 AM', '8:45 AM'],
-  ['MONTACARGA', 'MONTACARGA', 'E-PROCOM3PROCEDIMIENTOS OPERACIONALES DE MONTACARGA 3', '2 SEM', 'ELADIO BLANQUICETT RAMIREZ', '6:30 AM', '8:45 AM'],
-  ['6B', 'LENGUA INGLESA', 'NIVEL 11', '2 SEM', 'JOSE TARA', '6:30 AM', '8:45 AM']
-];
-
-function findOrAdd(items, name, createItem) {
-  const found = items.find((item) => item.nombre === name);
-  if (found) return found;
-  const item = createItem(items.length + 1);
-  items.push(item);
-  return item;
-}
-
-filasNuevas.forEach(([salon, carrera, materia, semestre, profesor], index) => {
-  const teacher = findOrAdd(profesoresImagen, profesor, (id) => ({
-    id: `img-prof-${id}`,
-    nombre: profesor,
-    email: 'Contacto institucional',
-    telefono: 'Contacto institucional',
-    departamento: carrera,
-    oficina: 'Coordinacion academica',
-    horarioAtencion: 'Consultar disponibilidad',
-    foto: profesor.split(' ').map((part) => part[0]).join('').slice(0, 2),
-    color: 'from-blue-500 to-indigo-600'
-  }));
-  const subject = findOrAdd(materiasImagen, materia, (id) => ({
-    id: `img-mat-${id}`,
-    nombre: materia,
-    codigo: `MOD4-${String(id).padStart(2, '0')}`,
-    programa: carrera,
-    creditos: 0,
-    departamento: carrera,
-    color: 'from-blue-500 to-indigo-500'
-  }));
-  const room = findOrAdd(salonesImagen, salon, (id) => ({ id: `img-salon-${id}`, nombre: salon, edificio: 'Sede principal', tipo: 'Aula' }));
-
-  horariosImagen.push({
-    id: `img-extra-hor-${index + 1}`,
-    materiaId: subject.id,
-    profesorId: teacher.id,
-    salonId: room.id,
-    dia: 'Corte 4',
-    fecha: '05 al 19 de septiembre de 2026',
-    horaInicio: '12:45',
-    horaFin: '18:15',
-    modalidad: 'Semipresencial',
-    corte: 'MOD#4',
-    carrera,
-    semestre,
-    estudianteIds: ['est-001']
-  });
-});
-
-filasCorte5.forEach(([salon, carrera, materia, semestre, profesor, horaInicio, horaFin], index) => {
-  const teacher = profesor ? findOrAdd(profesoresImagen, profesor, (id) => ({
-    id: `img-prof-${id}`,
-    nombre: profesor,
-    email: 'Contacto institucional',
-    telefono: 'Contacto institucional',
-    departamento: carrera,
-    oficina: 'Coordinacion academica',
-    horarioAtencion: 'Consultar disponibilidad',
-    foto: profesor.split(' ').map((part) => part[0]).join('').slice(0, 2),
-    color: 'from-blue-500 to-indigo-600'
-  })) : null;
-  const subject = findOrAdd(materiasImagen, materia, (id) => ({
-    id: `img-mat-${id}`,
-    nombre: materia,
-    codigo: `MOD5-${String(id).padStart(2, '0')}`,
-    programa: carrera,
-    creditos: 0,
-    departamento: carrera,
-    color: 'from-blue-500 to-indigo-500'
-  }));
-  const room = findOrAdd(salonesImagen, salon, (id) => ({ id: `img-salon-${id}`, nombre: salon, edificio: 'Sede principal', tipo: 'Aula' }));
-
-  horariosImagen.push({
-    id: `img-corte5-hor-${index + 1}`,
-    materiaId: subject.id,
-    profesorId: teacher?.id || null,
-    salonId: room.id,
-    dia: 'Corte 5',
-    fecha: '07 de septiembre de 2026B',
-    horaInicio,
-    horaFin,
-    modalidad: 'Presencial',
-    corte: 'MOD#5',
-    carrera,
-    semestre,
-    estudianteIds: ['est-001']
-  });
-});
-
-function normalizeScheduleDays(schedule) {
-  const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  let rangeIndex = 0;
-
-  schedule.forEach((item) => {
-    const subjectName = materiasImagen.find((subject) => subject.id === item.materiaId)?.nombre || '';
-    const materia = subjectName.toUpperCase();
-
-    if (/SÁBADO|SABADO/.test(materia)) {
-      item.dia = 'Sábado';
-    } else if (String(item.fecha || '').includes('07 de septiembre')) {
-      item.dia = 'Lunes';
-    } else {
-      item.dia = diasSemana[rangeIndex % diasSemana.length];
-      rangeIndex += 1;
-    }
-  });
-}
-
 const MESES = {
   enero: 0,
   febrero: 1,
@@ -415,9 +119,7 @@ function parseRangoFechas(texto) {
     return { fechas: [], bloque: null };
   }
 
-  if (anioFin === undefined) {
-    anioFin = anio;
-  }
+  if (anioFin === undefined) anioFin = anio;
 
   const fechaInicio = new Date(anio, mesInicio, diaInicio);
   const fechaFin = new Date(anioFin, mesFin, diaFin);
@@ -465,29 +167,18 @@ let contadorC5 = 0;
 let contadorC6 = 0;
 
 function parseLineaHorario(linea, index) {
-  const campos = linea.split('|');
-  const [marca, horaInicio, horaFin, aula, programa, semestre, corte, codigo, modulo, docente] = campos;
+  const [marca, horaInicio, horaFin, aula, programa, semestre, corte, codigo, modulo, docente] = linea.split('|');
   const fecha = MAPA_FECHAS[marca];
   const { fechas, bloque } = parseRangoFechas(fecha);
   const prefijo = marca.startsWith('C6') ? 'c6' : 'c5';
   const numero = prefijo === 'c6' ? ++contadorC6 : ++contadorC5;
-
   return {
     id: `${prefijo}-${String(numero).padStart(3, '0')}`,
-    aula,
-    horaInicio,
-    horaFin,
+    aula, horaInicio, horaFin,
     modalidad: MAPA_MODALIDAD[marca],
-    programa,
-    semestre,
-    corte,
-    codigo,
-    modulo,
-    docente,
+    programa, semestre, corte, codigo, modulo, docente,
     estudiantes: 0,
-    fecha,
-    bloque,
-    fechas
+    fecha, bloque, fechas
   };
 }
 
@@ -503,74 +194,14 @@ try {
 }
 
 const todosLosHorarios = todasLasLineas.map((linea, index) => parseLineaHorario(linea, index));
-const horariosNuevos = todosLosHorarios.filter((horario) => horario.id.startsWith('c5'));
-const horariosCorte6Nuevos = todosLosHorarios.filter((horario) => horario.id.startsWith('c6'));
-
-const horariosConFechas = horariosImagen.map((h) => {
-  const { fechas, bloque } = parseRangoFechas(h.fecha);
-  const { dia, rangoOriginal, ...resto } = h;
-  const limpio = { ...resto };
-  const basura = ['Por definir', 'Corte 4', 'Corte 5'];
-
-  if (dia && !basura.includes(dia)) {
-    limpio.diaOriginal = dia;
-  }
-
-  limpio.fecha = h.fecha;
-  if (bloque) {
-    limpio.bloque = bloque;
-  }
-  limpio.fechas = fechas;
-  return limpio;
-});
-
-const RANGO_C6 = 'del 23 de septiembre al 08 de octubre de 2026';
-const FECHAS_C6 = parseRangoFechas(RANGO_C6).fechas;
-
-const filasCorte6 = [
-  { aula: '3A', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'ENFERMERIA', semestre: '1 SEM', corte: 'MOD#7', codigo: 'E-GENHSA', modulo: 'GENERAR HÁBITOS SALUDABLES EN LOS AMBIENTES DE TRABAJO', docente: 'MARLLY LOPEZ', estudiantes: 15 },
-  { aula: '104', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'ENFERMERIA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-APNTAV', modulo: 'APLICAR NORMAS Y TÉCNICAS DEL AMBIENTE VITAL', docente: 'KATIA VALENCIA', estudiantes: 31 },
-  { aula: '601A', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'ENFERMERIA', semestre: '4 SEM', corte: 'MOD#7', codigo: 'E-CIMPRN', modulo: 'CUIDAR INTEGRALMENTE A LA MUJER EN EL POSTPARTO Y AL RECIÉN NACIDO', docente: 'ARIEL PUELLO', estudiantes: 28 },
-  // NOTA: Farmacia 3 SEM también tiene jornada 6:30 en aula 3A
-  //       que se reubica a las 9:00. No se cuenta como módulo aparte.
-  { aula: '3A', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'FARMACIA', semestre: '3 SEM', corte: 'MOD#7', codigo: 'E-NPS', modulo: 'NEGOCIACIÓN DE PRODUCTOS Y SERVICIOS I', docente: 'ILILIANA MANRIQUE', estudiantes: 66 },
-  { aula: '02', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'NAVIERA-LOGISTICA-COMERCIO', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-REGCAM', modulo: 'REGIMEN CAMBIARIO', docente: 'LUCIA TERESA ELJACH MOSQUERA', estudiantes: 13 },
-  { aula: '02', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'NAVIERA-LOGISTICA-COMERCIO', semestre: '3 SEM', corte: 'MOD#7', codigo: 'E-ARANIA', modulo: 'ARANCEL I', docente: 'VILMA TORRES', estudiantes: 10 },
-  { aula: '01B', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'AUX VUELO', semestre: '1 SEM', corte: 'MOD#7', codigo: 'E-DESTUR', modulo: 'DESTINO TURÍSTICO', docente: 'YEISON YEPES', estudiantes: 3 },
-  { aula: '2D', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'COCINA NAC E INTER', semestre: '1 SEM', corte: 'MOD#7', codigo: 'E-COCFRIA', modulo: 'COCINA FRÍA I', docente: 'HORTENSIA HERRERA', estudiantes: 8 },
-  { aula: '03', horaInicio: '09:00', horaFin: '11:15', modalidad: 'PRESENCIAL', programa: 'INGLES TECNICO NIVELES', semestre: 'NIVEL 12', corte: 'MOD#7', codigo: '', modulo: '', docente: 'JOSE TARA', estudiantes: 13 },
-  { aula: '6F', horaInicio: '13:45', horaFin: '16:00', modalidad: 'PRESENCIAL', programa: 'CLINICA VETERINARIA', semestre: '1 SEM', corte: 'MOD#7', codigo: 'E-IYTMIN', modulo: 'INYECTOLOGIA Y TOMA DE MUESTRAS', docente: 'JENNIFER DEL VALLE RANDIAL', estudiantes: 8 },
-  { aula: '6F', horaInicio: '11:30', horaFin: '13:30', modalidad: 'PRESENCIAL', programa: 'CLINICA VETERINARIA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-ENFERIN', modulo: 'ENFERMEDADES INFECCIOSAS', docente: 'JENNIFER DEL VALLE RANDIAL', estudiantes: 8 },
-  { aula: '501B', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'ENFERMERIA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-APNTAV', modulo: 'APLICAR NORMAS Y TÉCNICAS DEL AMBIENTE VITAL', docente: 'KATIA VALENCIA', estudiantes: 17 },
-  { aula: '604', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'ENFERMERIA', semestre: '4 SEM', corte: 'MOD#7', codigo: 'E-CIMPRN', modulo: 'CUIDAR INTEGRALMENTE A LA MUJER EN EL POSTPARTO Y AL RECIÉN NACIDO', docente: 'ARIEL PUELLO', estudiantes: 8 },
-  { aula: '3B', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'FARMACIA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-FAR2', modulo: 'FARMACOLOGÍA II (USO RACIONAL DE MEDICAMENTOS)', docente: 'MONICA RODRIGUEZ RODRIGUEZ', estudiantes: 9 },
-  { aula: '4A', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'COSMETOLOGIA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-NUTDIE', modulo: 'NUTRICIÓNY DIETÉTICA', docente: 'KETTY CAMPOS', estudiantes: 6 },
-  { aula: '602', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'NAVIERA-LOGISTICA-COMERCIO', semestre: '1 SEM', corte: 'MOD#5', codigo: 'E-OPPREXI', modulo: 'OPERACIÓN DE LOS PROCESOS DE IMPORTACIONES I', docente: 'LUCIA ELJACH', estudiantes: 5 },
-  { aula: '501A', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'NAVIERA-LOGISTICA-COMERCIO', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-REGCAM', modulo: 'REGIMEN CAMBIARIO', docente: 'VILMA TORRES CHAVEZ', estudiantes: 15 },
-  { aula: '106', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'PRIMERA INFANCIA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-ETCN', modulo: 'ESTIMULACIÓN TEMPRANA Y CUIDADO DEL NIÑO', docente: 'MARIA TEREZA VARGAS', estudiantes: 15 },
-  { aula: '601B', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'AUX VUELO', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-SAI', modulo: 'ALIMENTOS Y BEBIDAS I (SERVICIO A LA MESA I)', docente: 'YEISON YEPES', estudiantes: 2 },
-  { aula: '2E', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'COCINA NAC E INTER', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-COSTOS', modulo: 'COSTOS', docente: 'CRISTIAN AROCA', estudiantes: 13 },
-  { aula: '2D', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'COCINA NAC E INTER', semestre: '3 SEM', corte: 'MOD#7', codigo: 'E-NUTDIE', modulo: 'NUTRICIÓNY DIETÉTICA', docente: 'HORTENSIA HERRERA VILLA', estudiantes: 8 },
-  { aula: 'DISEÑO GRAFICO', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'DISEÑO GRAFICO', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-COMUGRA', modulo: 'COMUNICACIÓN GRÁFICA', docente: 'ADRIANA GAVIRIA', estudiantes: 15 },
-  { aula: 'SISTEMAS 1', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'SISTEMAS-SOFTWARE', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-IBD', modulo: 'INTRODUCCIÓN A LAS BASE DATOS', docente: 'ANTONY BAIZ TEJEDOR', estudiantes: 13 },
-  { aula: 'MECANICA DIESEL', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'MECANICA DIESEL', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-RSD', modulo: 'REPARACIÓN DE LOS SISTEMAS DE COMBUSTIBLES DIÉSEL III', docente: 'HERNANDO LUIS GUZMAN ORTEGA', estudiantes: 11 },
-  { aula: 'MECANICA DIESEL', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'MECANICA DIESEL', semestre: '3 SEM', corte: 'MOD#7', codigo: 'E-RSD', modulo: 'REPARACIÓN DE LOS SISTEMAS DE COMBUSTIBLES DIÉSEL III', docente: 'HERNANDO LUIS GUZMAN ORTEGA', estudiantes: 3 },
-  { aula: 'MONTACARGA', horaInicio: '06:30', horaFin: '08:45', modalidad: 'PRESENCIAL', programa: 'MONTACARGA', semestre: '2 SEM', corte: 'MOD#7', codigo: 'E-PROCOM4', modulo: 'PROCEDIMIENTOS OPERACIONALES DE MONTACARGA 4', docente: 'ELADIO BLANQUICETT RAMIREZ', estudiantes: 16 }
-];
-
-const horariosCorte6 = filasCorte6.map((fila, i) => ({
-  id: 'c6-hor-' + (i + 1),
-  ...fila,
-  fecha: RANGO_C6,
-  bloque: null,
-  fechas: FECHAS_C6
-}));
+const horarios = todosLosHorarios.filter((horario) => horario.id.startsWith('c5'));
+const horariosCorte6 = todosLosHorarios.filter((horario) => horario.id.startsWith('c6'));
 
 module.exports = {
-  profesores: profesoresImagen,
-  materias: materiasImagen,
-  salones: salonesImagen,
-  estudiantes: estudiantesImagen,
-  horarios: horariosNuevos,
-  horariosCorte6: horariosCorte6Nuevos
+  profesores,
+  materias,
+  salones,
+  estudiantes,
+  horarios,
+  horariosCorte6
 };
