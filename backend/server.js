@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 
 const fs = require('fs/promises');
 const path = require('path');
@@ -225,10 +225,17 @@ app.get('/api/v1/health', (req, res) => {
 });
 
 app.get('/api/v1/estadisticas', (req, res) => {
+  const todosHorarios = [...horarios, ...(horariosCorte6 || [])];
+  const docentesUnicos = [...new Set(
+    todosHorarios.map(h => h.docente).filter(Boolean)
+  )];
+  const programasUnicos = [...new Set(
+    todosHorarios.map(h => h.programa || h.carrera).filter(Boolean)
+  )];
   return res.json({
-    profesores: profesores.length,
-    horarios: horarios.length,
-    programas: getUniquePrograms().length,
+    profesores: docentesUnicos.length,
+    horarios: todosHorarios.length,
+    programas: programasUnicos.length,
     materias: materias.length
   });
 });
