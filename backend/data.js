@@ -150,6 +150,7 @@ const MAPA_FECHAS = {
   C5P: '07 de septiembre de 2026B',
   C5I: '15 al 24 de septiembre de 2026B',
   C5S: '15 al 24 de septiembre de 2026B',
+  C5I2: 'del 25 de septiembre al 06 de octubre de 2026B',
   C6P: 'del 23 de septiembre al 08 de octubre de 2026B'
 };
 
@@ -157,6 +158,7 @@ const MAPA_MODALIDAD = {
   C5P: 'Presencial',
   C5I: 'Intensiva',
   C5S: 'Semipresencial',
+  C5I2: 'Intensiva',
   C6P: 'Presencial'
 };
 
@@ -311,11 +313,99 @@ const DATA_LINEAS = [
   'C6P|09:00|11:15|2D|Cocina Nac e Inter|1 SEM|MOD#7|E-COCFRIA|COCINA FRÍA I|Hortensia Herrera',
   'C6P|09:00|11:15|103|Inglés Técnico Niveles|COMBI SEM|MOD#7|NIVEL 12|NIVEL 12|José Tara',
   'C6P|11:30|13:30|6F|Clínica Veterinaria|2 SEM|MOD#7|E-ENFERIN|ENFERMEDADES INFECCIOSAS|Jennifer Del Valle Randial',
-  'C6P|13:45|16:00|6F|Clínica Veterinaria|1 SEM|MOD#7|E-IYTMIN|INYECTOLOGIA Y TOMA DE MUESTRAS|Jennifer Del Valle Randial'
+  'C6P|13:45|16:00|6F|Clínica Veterinaria|1 SEM|MOD#7|E-IYTMIN|INYECTOLOGIA Y TOMA DE MUESTRAS|Jennifer Del Valle Randial',
+  // === NUEVOS REGISTROS DE LAS IMAGENES ADICIONALES ===
+  'C5I2|13:45|16:00|2D|Cocina nac e inter|3SEM INT|MOD#6|E-NUTDIE|NUTRICION Y DIETETICA|Victor Alcazar',
+  // REVISAR: el texto del modulo aparece compuesto por dos descripciones en la captura.
+  'C5I2|13:45|16:00|Sistemas 2|Sistemas-Software|3SEM INT|MOD#6|E-IR|INSTALACION Y MANTENIMIENTO DE REDES INFORMATICAS / INSTALACION Y SOPORTE DE REDES INFORMATICAS|Julio Maturana',
+  'C5I2|13:45|16:00|Refrigeracion|Refrigeracion|2SEM INT|MOD#6|E-ELECIII|ELECTRICIDAD III (SISTEMA DE POTENCIA)|Ivan Sevilla Monterrosa',
+  'C5I2|13:45|16:00|Refrigeracion|Refrigeracion|2SEM INT|MOD#6|E-ELECIII|ELECTRICIDAD III (SISTEMA DE POTENCIA)|Ivan Sevilla Monterrosa',
+  'C5I2|13:45|16:00|Mecanica Diesel|Mecanica Diesel|3SEM INT|MOD#6|E-RSD|REPARACION DE LOS SISTEMAS DE COMBUSTIBLES DIESEL III|Hernando Luis Guzman',
+  'C5I2|13:45|16:00|703|Seguridad Ocupacional|3SEM INT|MOD#6|E-SISINGE|SISTEMAS INTEGRADOS DE GESTION II (AMBIENTAL)|Gloria Amador',
+  'C5I2|13:45|16:00|405|Inv Judicial y Criminalistica|3SEM INT|MOD#6|E-FOTPLAN|FOTOGRAFIA Y PLANIMETRIA FORENSE|Cynthia Xibellys Cancio Gomez',
+  'C5I2|13:45|16:00|6D|Lengua Inglesa|2SEM INT|MOD#6|NIVEL 21|NIVEL 21|Abraham Villalba',
+  'C5I2|09:00|11:15|103|Ingles Tecnico Niveles|COMBI SEM|MOD#1|NIVEL 3|NIVEL 3|Danna Arenas',
+  'C5I2|13:45|16:00|103|Enfermeria|3SEM INT|MOD#6|E-PAMED|PREPARACION Y ADMINISTRACION DE MEDICAMENTOS II|Ariel Puello',
+  'C5I2|13:45|16:00|3B|Farmacia|3SEM INT|MOD#6|E-INSPSI|INSPECCION DE PRODUCTOS Y SERVICIOS I|Yesenia Bravo',
+  'C5I2|13:45|16:00|1A|Salud Oral|3SEM INT|MOD#6|E-PROMPS|PROMOCION Y PREVENCION DE LA SALUD PUBLICA BUCAL I|Indira Espinoza',
+  'C5I2|13:45|16:00|Cosmetologia|Cosmetologia|3SEM INT|MOD#6|E-TECFAC|TECNICAS FACIALES IV|Luz Anyeli Quintero',
+  'C5I2|13:45|16:00|1B|Recreacion y Deporte|2SEM INT|MOD#6|E-EDUFUN|FUNDAMENTO DEL ENTRENAMIENTO PERSONALIZADO|Rodrigo Montes',
+  'C5I2|13:45|16:00|1B|Recreacion y Deporte|3SEM INT|MOD#6|E-EDUFUN|FUNDAMENTO DEL ENTRENAMIENTO PERSONALIZADO|Rodrigo Montes',
+  'C5I2|13:45|16:00|4E|Admon de Empresas-RRHH-Salud|3SEM INT|MOD#6|E-CONPER|CONTRATACION DE PERSONAL|Cristian Aroca',
+  'C5I2|13:45|16:00|4B|Aux Contable|3SEM INT|MOD#6|E-ANLFI|ANALISIS FINANCIERO II|Mario Correa',
+  'C5I2|13:45|16:00|602|Naviera-Logistica-Comercio|3SEM INT|MOD#6|E-ARANII|ARANCEL II|Lucia Teresa Eljach Mosquera',
+  'C5I2|13:45|16:00|Sistemas 1|Primera Infancia|3SEM INT|MOD#6|E-PROEDU|PROYECTO EDUCATIVO INSTITUCIONAL|Otilia Rivas',
+  'C5I2|13:45|16:00|2E|Hoteleria-Recepcion|3SEM INT|MOD#6|E-RECRESII|RECEPCION Y RESERVAS II|Yeison Yepes',
+  'C5I2|11:30|13:30|6A|Montacarga|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Daniel Rico',
+  'C5I2|11:30|13:30|6E|Montacarga|2SEM INT|MOD#6|E-PROCOM5|PROCEDIMIENTOS OPERACIONALES DE MONTACARGA 5|Rafael Bautista',
+  'C5I2|11:30|13:30|405|Inv Judicial y Criminalistica|1SEM INT|MOD#8|E-MORFFAC|MORFOLOGIA FACIAL FORENSE|Cynthia Xibellys Cancio',
+  'C5I2|11:30|13:30|6C|Lengua Inglesa|2SEM INT|MOD#6|NIVEL 13|NIVEL 13|Abraham Villalba',
+  'C5I2|11:30|13:30|6D|Lengua Inglesa|1SEM INT|MOD#6|NIVEL 6|NIVEL 6|Danna Yi',
+  'C5I2|09:00|11:15|103|Ingles Tecnico Niveles|COMBI SEM||NIVEL 4|NIVEL 4|Carlos Salas',
+  'C5I2|11:30|13:30|802|Naviera-Logistica-Comercio|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Danna Arenas',
+  'C5I2|11:30|13:30|602|Naviera-Logistica-Comercio|2SEM INT|MOD#6|E-GESTADII|GESTION ADUANERA II|Lucia Teresa Eljach Mosquera',
+  'C5I2|11:30|13:30|601A|Primera Infancia|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Luz Anyeli Quintero Rodriguez',
+  'C5I2|11:30|13:30|505|Hoteleria-Recepcion|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Yeison Yepes',
+  'C5I2|11:30|13:30|503|Hoteleria-Recepcion|2SEM INT|MOD#6|E-RECRESII|RECEPCION Y RESERVAS II|Nataly Guerrero',
+  'C5I2|11:30|13:30|2D|Cocina nac e inter|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Doris Escorcia',
+  'C5I2|11:30|13:30|2B|Cocina nac e inter|3SEM INT|MOD#6|E-NUTDIE|NUTRICION Y DIETETICA|Victor Alcazar',
+  'C5I2|11:30|13:30|Sistemas 1|Sistemas-Software|1SEM INT|MOD#8|E-ALGOR|ALGORITMO|Julio Maturana',
+  // REVISAR: abreviatura/codigo del modulo de instalacion no se distingue completamente.
+  'C5I2|11:30|13:30|Sistemas 1|Sistemas-Software|2SEM INT|MOD#6|E-IR|INSTALACION Y MANTENIMIENTO DE REDES INFORMATICAS / INSTALACION Y SOPORTE DE REDES INFORMATICAS|Richard Arnedo',
+  // REVISAR: abreviatura/codigo del modulo de instalacion no se distingue completamente.
+  'C5I2|11:30|13:30|Sistemas 1|Sistemas-Software|3SEM INT|MOD#6|E-IR|INSTALACION Y MANTENIMIENTO DE REDES INFORMATICAS / INSTALACION Y SOPORTE DE REDES INFORMATICAS|Richard Arnedo',
+  'C5I2|11:30|13:30|6A|Refrigeracion|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Daniel Rico',
+  'C5I2|11:30|13:30|6A|Refrigeracion|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Daniel Rico',
+  // REVISAR: aula/semestre/codigo parcialmente cortados en la captura.
+  'C5I2|11:30|13:30|Soldadura|Soldadura|2SEM INT|MOD#6||PROCEDIMIENTOS DE MATERIALES PARA LOS PROCESOS DE SOLDADURA|Xiomara Osorio',
+  'C5I2|11:30|13:30|Mecanica Diesel|Mecanica Diesel|2SEM INT|MOD#6|E-AVHA|ACONDICIONAR VEHICULOS (SISTEMAS DE TRANSMISION II)|Hernando Luis Guzman Ortega',
+  'C5I2|11:30|13:30|703|Seguridad Ocupacional|1SEM INT|MOD#8||SANEAMIENTO BASICO|Yesith Carvajalino',
+  'C5I2|11:30|13:30|703|Seguridad Ocupacional|2SEM INT|MOD#6|E-PLANEME|PLAN DE EMERGENCIA|Gloria Amador',
+  'C5I2|17:00|21:00|3A|Farmacia|3SEM INT|MOD#6|E-NPS|NEGOCIACION DE PRODUCTOS Y SERVICIOS I|Alejandro Rodelo',
+  'C5I2|17:00|21:00|Sistemas 1|Admon de Empresas-RRHH-Salud|4SEM INT|MOD#3|E-SOADMA|SOFTWARE ADMINISTRATIVO I|Cristian Aroca',
+  'C5I2|09:00|11:15|103|Ingles Tecnico Niveles|COMBI SEM|MOD#2|NIVEL 3|NIVEL 3 (VIRTUAL)|Yeison Jimenez',
+  'C5I2|09:00|11:15|103|Ingles Tecnico Niveles|COMBI SEM|MOD#2|NIVEL 3|NIVEL 3 (VIRTUAL)|Jose Taras',
+  'C5I2|16:15|18:30|2D|Enfermeria|3SEM INT|MOD#6|E-PAMED|PREPARACION Y ADMINISTRACION DE MEDICAMENTOS II|Katia Valencia',
+  'C5I2|16:15|18:30|Sistemas 1|Cosmetologia|3SEM INT|MOD#6|E-TECFAC|TECNICAS FACIALES IV|Luz Anyeli Quintero',
+  'C5I2|16:15|18:30|503|Naviera-Logistica-Comercio|3SEM INT|MOD#6|E-ARANII|ARANCEL I|Castor Ramirez',
+  'C5I2|09:00|11:15|103|Ingles Tecnico Niveles|COMBI SEM|MOD#2|NIVEL 3|NIVEL 3 (VIRTUAL)|Yeison Jimenez',
+  'C5I2|09:00|11:15|103|Ingles Tecnico Niveles|COMBI SEM|MOD#2|NIVEL 3|NIVEL 3 (VIRTUAL)|Danna Arenas',
+  'C5I2|09:00|11:15|103|Enfermeria|4SEM INT|MOD#4||VACUNACION|Yira Fajardo',
+  'C5I2|09:00|11:15|Cosmetologia|Cosmetologia|2SEM INT|MOD#6|E-TECCOR|TECNICAS CORPORALES I|Luz Anyeli Quintero',
+  'C5I2|09:00|11:15|703|Naviera-Logistica-Comercio|1SEM INT|MOD#2|E-INCEX|INTRODUCCION AL COMERCIO EXTERIOR E INTERNACIONAL|Castor Ramirez',
+  'C5I2|09:00|11:15|106|Primera Infancia|2SEM INT|MOD#6|E-PRODAP|PROBLEMA Y DIFICULTAD DEL APRENDIZAJE|Maria Tereza Vargas',
+  'C5I2|09:00|11:15|2B|Mesa y Bar|1SEM INT|MOD#6|E-SAI|ALIMENTOS Y BEBIDAS I (SERVICIO A LA MESA I)|Victor Alcazar',
+  'C5I2|09:00|11:15|601B|Hoteleria-Recepcion|3SEM INT|MOD#6|E-RECRESII|RECEPCION Y RESERVAS II|Nataly Guerrero',
+  'C5I2|09:00|11:15|2E|Cocina nac e inter|2SEM INT|MOD#6|E-COCNAC|COCINA NACIONAL I|Nicolaza Molina',
+  'C5I2|09:00|11:15|Mecanica Diesel|Mecanica Diesel|1SEM INT|MOD#8|E-RMDIV|REPARAR MOTORES DIESEL IV|Hernando Guzman',
+  'C5I2|09:00|11:15|502B|Seguridad Ocupacional|3SEM INT|MOD#6|E-SISINGE|SISTEMAS INTEGRADOS DE GESTION II (AMBIENTAL)|Gloria Amador',
+  'C5I2|09:00|11:15|6C|Ingles Tecnico Niveles|COMBI SEM|MOD#2|NIVEL 3|NIVEL 3|Abraham Villalba',
+  'C5I2|09:00|11:15|6D|Ingles Tecnico Niveles|COMBI SEM|MOD#2|NIVEL 3|NIVEL 3|Danna Vanessa Arenas Yi',
+  'C5I2|06:30|08:45|1A|Mecanica Dental|1SEM INT|MOD#6|E-PRPR|PRACTICAS DE PROTESIS REMOVIBLE|Augusto Contreras Mendoza',
+  'C5I2|06:30|08:45|601A|Admon de Empresas-RRHH-Salud|3SEM INT|MOD#6|E-CONPER|CONTRATACION DE PERSONAL|Liria Colmenares',
+  'C5I2|06:30|08:45|4B|Aux Contable|3SEM INT|MOD#6|E-ANLFI|ANALISIS FINANCIERO II|Pedro Baldovino',
+  'C5I2|06:30|08:45|702|Naviera-Logistica-Comercio|3SEM INT|MOD#6|E-ARANII|ARANCEL II|Carmelo Lugo',
+  'C5I2|06:30|08:45|104|Hoteleria-Recepcion|3SEM INT|MOD#6|E-RECRESII|RECEPCION Y RESERVAS II|Nataly Guerrero',
+  'C5I2|06:30|08:45|703|Seguridad Ocupacional|3SEM INT|MOD#6|E-SISINGE|SISTEMAS INTEGRADOS DE GESTION II (AMBIENTAL)|Gloria Amador',
+  'C5I2|11:30|13:30|104|Enfermeria|1SEM INT|MOD#8|E-EVCFEE|EVALUACION DE LAS CONDICIONES FISICAS Y EMOCIONALES I|Marlly Lopez',
+  'C5I2|11:30|13:30|103|Enfermeria|2SEM INT|MOD#6|E-APNSCII|APLICAR NORMAS DE SEGURIDAD Y COMODIDAD II|Ariel Puello',
+  'C5I2|11:30|13:30|3A|Farmacia|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Liliana Manrique',
+  'C5I2|11:30|13:30|3B|Farmacia|2SEM INT|MOD#6|E-DISPMED|DISPENSACION DE MEDICAMENTOS|Yesenia Bravo',
+  'C5I2|11:30|13:30|1A|Salud Oral|2SEM INT|MOD#6|E-INSODO|INSTRUMENTALES ODONTOLOGICOS|Indira Espinoza Duarte',
+  'C5I2|11:30|13:30|1A|Mecanica Dental|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Indira Espinoza Duarte',
+  'C5I2|11:30|13:30|1A|Mecanica Dental|2SEM INT|MOD#6|E-INSODO|INSTRUMENTALES ODONTOLOGICOS|Indira Espinoza Duarte',
+  'C5I2|11:30|13:30|601A|Cosmetologia|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Luz Anyeli Quintero Rodriguez',
+  'C5I2|11:30|13:30|3A|Recreacion y Deporte|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Liliana Manrique',
+  'C5I2|11:30|13:30|801|Admon de Empresas-RRHH-Salud|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Yira Karina Redondo Garcia',
+  'C5I2|11:30|13:30|4B|Admon de Empresas-RRHH-Salud|2SEM INT|MOD#6|E-GCAP|GESTION DE LA CALIDAD APLICADA|Alexander Garcia',
+  'C5I2|11:30|13:30|801|Admos Salud|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Yira Karina Redondo Garcia',
+  'C5I2|11:30|13:30|4B|Admos Salud|2SEM INT|MOD#6|E-GCAP|GESTION DE LA CALIDAD APLICADA|Alexander Garcia',
+  'C5I2|11:30|13:30|1B|Admos Salud|3SEM INT|MOD#6|E-SSF|FACTURACION EN LOS SERVICIOS DE LA SALUD I|Beltis Lora',
+  'C5I2|11:30|13:30|801|Aux Contable|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Yira Karina Redondo Garcia'
 ];
 
 const todosLosHorarios = DATA_LINEAS.map((linea, index) => parseLineaHorario(linea, index));
-const horarios = todosLosHorarios.filter((horario) => horario.id.startsWith('c5'));
+const horarios = todosLosHorarios.filter((horario) => !horario.id.startsWith('c6'));
 const horariosCorte6 = todosLosHorarios.filter((horario) => horario.id.startsWith('c6'));
 
 module.exports = {
