@@ -1,11 +1,14 @@
-﻿const API_BASE_URL = 'https://elyon-yireh-production.up.railway.app';
+const API_BASE_URL = 'https://elyon-yireh-production.up.railway.app';
 
 const state = {
   allSchedule: [],
   allTeachers: [],
   selectedView: 'tarjetas',
-  studentId: 'est-101'
+  studentId: 'est-101',
+  members: []
 };
+
+const MEMBER_STORAGE_KEY = 'elyon_yireh_members';
 
 let horariosCorte6 = [];
 let verTodos = false;
@@ -31,8 +34,15 @@ const adminEditor = document.getElementById('adminEditor');
 const adminRows = document.getElementById('adminRows');
 const adminLoginMessage = document.getElementById('adminLoginMessage');
 const createScheduleButton = document.getElementById('createScheduleButton');
+const openMemberFormButton = document.getElementById('openMemberFormButton');
+const memberForm = document.getElementById('memberForm');
+const memberTable = document.getElementById('memberTable');
 const createScheduleForm = document.getElementById('createScheduleForm');
 const createScheduleMessage = document.getElementById('createScheduleMessage');
+const excelImportInput = document.getElementById('excelImportInput');
+const importStatus = document.getElementById('importStatus');
+const adminTabButtons = document.querySelectorAll('.admin-tab-btn');
+const adminTabPanels = document.querySelectorAll('.admin-tab-panel');
 const searchButton = document.getElementById('searchButton');
 const programSearch = document.getElementById('programSearch');
 const timeSearch = document.getElementById('timeSearch');
@@ -120,15 +130,15 @@ async function fetchJson(url, options = {}) {
     }
 
     if (!contentType.includes('application/json')) {
-      throw new Error('El servidor no devolvió una respuesta JSON válida');
+      throw new Error('El servidor no devolvi� una respuesta JSON v�lida');
     }
 
     return result;
   } catch (error) {
     console.error(`Error consultando ${url}:`, error);
     const friendlyError = new Error(error.name === 'AbortError'
-      ? 'No se pudo conectar con el servidor. Verifica tu conexión a internet.'
-      : 'No se pudo conectar con el servidor. Verifica tu conexión a internet.');
+      ? 'No se pudo conectar con el servidor. Verifica tu conexi�n a internet.'
+      : 'No se pudo conectar con el servidor. Verifica tu conexi�n a internet.');
     friendlyError.cause = error;
     throw friendlyError;
   }
@@ -181,7 +191,193 @@ function setLoading(value) {
 
 function renderStatistics(data) {
   if (!data || !statistics) return;
-  statistics.textContent = `${data.profesores} profesores · ${data.horarios} horarios · ${data.programas} programas`;
+  statistics.textContent = `${data.profesores} profesores � ${data.horarios} horarios � ${data.programas} programas`;
+}
+
+function getStoredMembers() {
+  try {
+    const values = JSON.parse(localStorage.getItem(MEMBER_STORAGE_KEY) || '[]');
+    if (!Array.isArray(values) || !values.length) {
+      return [{
+        id: 'member-admin',
+        nombre: 'Administrador',
+        rol: 'Coordinador',
+        email: 'admin@elyon.edu',
+        telefono: 'Sin asignar',
+        departamento: 'Academia'
+      }];
+    }
+    return values;
+  } catch {
+    return [{
+      id: 'member-admin',
+      nombre: 'Administrador',
+      rol: 'Coordinador',
+      email: 'admin@elyon.edu',
+      telefono: 'Sin asignar',
+      departamento: 'Academia'
+    }];
+  }
+}
+
+function saveStoredMembers(members) {
+  localStorage.setItem(MEMBER_STORAGE_KEY, JSON.stringify(members));
+  state.members = members;
+}
+
+function renderMemberTable() {
+  if (!memberTable) return;
+  const members = getStoredMembers();
+  memberTable.innerHTML = members.map((member) => `
+    <div class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-3 md:flex-row md:items-center md:justify-between">
+      <div>
+        <div class="text-sm font-semibold text-slate-900">${member.nombre || 'Sin nombre'}</div>
+        <div class="text-xs text-slate-500">${member.rol || 'Sin rol'} � ${member.departamento || 'Sin departamento'}</div>
+      </div>
+      <div class="text-xs text-slate-500">
+        <div>${member.email || 'Sin email'}</div>
+        <div>${member.telefono || 'Sin tel�fono'}</div>
+      </div>
+      <div class="flex gap-2">
+        <button type="button" class="rounded-xl border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700" data-member-edit="${member.id}">Editar</button>
+        <button type="button" class="rounded-xl border border-rose-200 px-2 py-1 text-xs font-semibold text-rose-600" data-member-delete="${member.id}">Eliminar</button>
+      </div>
+    </div>
+  `).join('');
+
+  memberTable.querySelectorAll('[data-member-edit]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const member = getStoredMembers().find((item) => item.id === button.dataset.memberEdit);
+      if (!member) return;
+      document.getElementById('memberName').value = member.nombre || '';
+      document.getElementById('memberRole').value = member.rol || '';
+      document.getElementById('memberEmail').value = member.email || '';
+      document.getElementById('memberPhone').value = member.telefono || '';
+      document.getElementById('memberDepartment').value = member.departamento || '';
+      memberForm.dataset.memberId = member.id;
+      memberForm.querySelector('button[type="submit"]').textContent = 'Actualizar miembro';
+      document.querySelector('[data-admin-tab="members"]').click();
+      document.getElementById('memberName').focus();
+    });
+  });
+
+  memberTable.querySelectorAll('[data-member-delete]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const members = getStoredMembers().filter((member) => member.id !== button.dataset.memberDelete);
+      saveStoredMembers(members);
+      renderMemberTable();
+      importStatus.textContent = 'Miembro eliminado correctamente.';
+    });
+  });
+}
+
+function exportWorkbook(rows, sheetName, fileName) {
+  const wb = XLSX.utils.book_new();
+  const sheet = XLSX.utils.json_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, sheet, sheetName);
+  XLSX.writeFile(wb, fileName);
+}
+
+async function exportAdminExcel(type = 'horarios') {
+  try {
+    if (type === 'miembros') {
+      const rows = getStoredMembers().map((member) => ({
+        nombre: member.nombre,
+        rol: member.rol,
+        email: member.email,
+        telefono: member.telefono,
+        departamento: member.departamento
+      }));
+      exportWorkbook(rows, 'Miembros', `elyon-miembros-${Date.now()}.xlsx`);
+      importStatus.textContent = 'Exportaci�n de miembros lista.';
+      return;
+    }
+
+    const result = await fetchJson(`${API_BASE_URL}/api/v1/admin/horarios`, { headers: adminHeaders() });
+    const rows = (result.data || []).map((item) => ({
+      programa: item.carrera || item.materia?.programa || '',
+      semestre: item.semestre || '',
+      fecha: item.fecha || '',
+      horaInicio: item.horaInicio || '',
+      horaFin: item.horaFin || '',
+      modalidad: item.modalidad || '',
+      salon: item.salon?.nombre || item.salonId || '',
+      docente: item.profesor?.nombre || item.profesorId || '',
+      materia: item.materia?.nombre || item.materiaId || ''
+    }));
+    exportWorkbook(rows, 'Horarios', `elyon-horarios-${Date.now()}.xlsx`);
+    importStatus.textContent = 'Exportaci�n de horarios lista.';
+  } catch (error) {
+    importStatus.textContent = error.message || 'No se pudo exportar el archivo Excel.';
+  }
+}
+
+function mapImportedRowsToMembers(rows) {
+  return rows
+    .filter((row) => row.nombre || row.email || row.rol)
+    .map((row, index) => ({
+      id: `member-${Date.now()}-${index}`,
+      nombre: row.nombre || row.Nombre || `Miembro ${index + 1}`,
+      rol: row.rol || row.Rol || 'Miembro',
+      email: row.email || row.Email || '',
+      telefono: row.telefono || row.Telefono || '',
+      departamento: row.departamento || row.Departamento || ''
+    }));
+}
+
+function mapImportedRowsToSchedule(rows) {
+  return rows.filter((row) => row.programa || row.carrera || row.semestre || row.fecha || row.horaInicio || row.horaFin || row.docente || row.profesor || row.salon || row.materia)
+    .map((row) => ({
+      carrera: row.programa || row.carrera || row.Programa || 'Programa por definir',
+      semestre: row.semestre || row.Semestre || '1',
+      fecha: row.fecha || row.Fecha || 'Sin fecha',
+      materiaId: row.materiaId || row.materia || row.Materia || 'mat-default',
+      profesorId: row.profesorId || row.docente || row.Profesor || 'prof-default',
+      salonId: row.salonId || row.salon || row.Salon || 'sal-default',
+      horaInicio: row.horaInicio || row.HoraInicio || '06:30',
+      horaFin: row.horaFin || row.HoraFin || '08:45',
+      modalidad: row.modalidad || row.Modalidad || 'Presencial'
+    }));
+}
+
+async function importExcelFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  try {
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+
+    if (!rows.length) {
+      throw new Error('El archivo no tiene filas �tiles para importar.');
+    }
+
+    const members = mapImportedRowsToMembers(rows);
+    if (members.length) {
+      const currentMembers = getStoredMembers();
+      saveStoredMembers([...currentMembers, ...members]);
+      renderMemberTable();
+    }
+
+    const schedules = mapImportedRowsToSchedule(rows);
+    for (const schedule of schedules) {
+      await fetchJson(`${API_BASE_URL}/api/v1/admin/horarios`, {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify(schedule)
+      }).catch(() => null);
+    }
+
+    importStatus.textContent = `Importaci�n completada. ${members.length} miembros y ${schedules.length} horarios procesados.`;
+    await loadAdminEditor();
+    await loadData();
+  } catch (error) {
+    importStatus.textContent = error.message || 'No se pudo importar el archivo Excel.';
+  } finally {
+    event.target.value = '';
+  }
 }
 
 function getFavorites() {
@@ -208,7 +404,7 @@ function toggleFavorite(id) {
 function renderFavorites() {
   const items = getFavorites().map((id) => state.allSchedule.find((item) => item.id === id)).filter(Boolean);
   favoritesSection.classList.toggle('hidden', !items.length);
-  favoritesContainer.innerHTML = items.map((item) => `<article class="favorite-card"><strong>${item.materia?.nombre || item.carrera || 'Clase'}</strong><span>${item.profesor?.nombre || 'Docente'} · ${item.horaInicio} - ${item.horaFin}</span><button type="button" data-favorite-remove="${item.id}">★</button></article>`).join('');
+  favoritesContainer.innerHTML = items.map((item) => `<article class="favorite-card"><strong>${item.materia?.nombre || item.carrera || 'Clase'}</strong><span>${item.profesor?.nombre || 'Docente'} � ${item.horaInicio} - ${item.horaFin}</span><button type="button" data-favorite-remove="${item.id}">?</button></article>`).join('');
   favoritesContainer.querySelectorAll('[data-favorite-remove]').forEach((button) => button.addEventListener('click', () => toggleFavorite(button.dataset.favoriteRemove)));
 }
 
@@ -429,21 +625,21 @@ function renderCards(items, agrupar = false) {
     : [['', items]];
 
   const cardsMarkup = groups.map(([franja, groupItems]) => `
-    ${agrupar ? `<h3 class="franja-titulo col-span-full">${formatHora(groupItems[0].horaInicio)} - ${formatHora(groupItems[0].horaFin)} <span>(${groupItems.length} módulos)</span></h3>` : ''}
+    ${agrupar ? `<h3 class="franja-titulo col-span-full">${formatHora(groupItems[0].horaInicio)} - ${formatHora(groupItems[0].horaFin)} <span>(${groupItems.length} m�dulos)</span></h3>` : ''}
     ${groupItems
     .map((item) => {
       const program = item.programa || item.carrera || item.materia?.programa || 'Sin programa';
-      const module = item.modulo || item.materia?.nombre || 'Sin módulo';
+      const module = item.modulo || item.materia?.nombre || 'Sin m�dulo';
       const teacher = item.docente || item.profesor?.nombre || 'Sin docente';
-      const classroom = item.aula || item.salon?.nombre || '—';
+      const classroom = item.aula || item.salon?.nombre || '�';
       const teacherInitials = item.profesor?.foto || teacher.split(' ').map((part) => part[0]).join('').slice(0, 2);
       return `
         <article class="glass result-card rounded-3xl p-5">
           <div class="mb-4 flex items-start justify-between gap-3">
-            <div class="card-actions"><button class="favorite-star ${isFavorite(item.id) ? 'is-favorite' : ''}" type="button" data-favorite="${item.id}" aria-label="${isFavorite(item.id) ? 'Quitar favorito' : 'Agregar favorito'}">★</button></div>
+            <div class="card-actions"><button class="favorite-star ${isFavorite(item.id) ? 'is-favorite' : ''}" type="button" data-favorite="${item.id}" aria-label="${isFavorite(item.id) ? 'Quitar favorito' : 'Agregar favorito'}">?</button></div>
           </div>
 
-          <p class="mb-2 text-sm text-slate-400">${program} · ${item.semestre || 'Semestre'}</p>
+          <p class="mb-2 text-sm text-slate-400">${program} � ${item.semestre || 'Semestre'}</p>
           <h3 class="mb-4 text-xl font-semibold text-slate-900">${module}</h3>
 
           <div class="mb-4 flex items-center gap-3">
@@ -470,11 +666,11 @@ function renderCards(items, agrupar = false) {
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">SEMESTRE</span>
-              <strong class="text-right text-slate-900">${item.semestre || '—'}</strong>
+              <strong class="text-right text-slate-900">${item.semestre || '�'}</strong>
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">CORTE#4</span>
-              <strong class="text-right text-slate-900">${item.corte || '—'}</strong>
+              <strong class="text-right text-slate-900">${item.corte || '�'}</strong>
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">NOMBRE DE MODULO 4</span>
@@ -566,7 +762,7 @@ async function checkScheduleUpdates() {
     if (previous && previous !== result.timestamp) new Notification('ELYON YIREH', { body: 'Hay cambios nuevos en los horarios.' });
     localStorage.setItem('elyon-yireh-last-update', result.timestamp);
   } catch (error) {
-    console.warn('No se pudo comprobar la actualización de horarios:', error.message);
+    console.warn('No se pudo comprobar la actualizaci�n de horarios:', error.message);
   }
 }
 
@@ -606,20 +802,20 @@ function buildModalContent(item) {
           ${item.profesor?.foto || 'PR'}
         </div>
         <div>
-          <div class="text-sm text-slate-400">${item.carrera || item.materia?.programa || 'Programa académico'}</div>
+          <div class="text-sm text-slate-400">${item.carrera || item.materia?.programa || 'Programa acad�mico'}</div>
           <div class="text-lg font-semibold text-slate-900">${item.profesor?.nombre}</div>
         </div>
       </div>
 
       <div class="mb-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-3 text-sm text-cyan-100">
         <div class="text-[10px] uppercase tracking-[0.18em] text-cyan-300">Programa</div>
-        <div class="mt-1 font-semibold">${item.carrera || item.materia?.programa || 'Por definir'} · ${item.semestre || 'Semestre por definir'}</div>
+        <div class="mt-1 font-semibold">${item.carrera || item.materia?.programa || 'Por definir'} � ${item.semestre || 'Semestre por definir'}</div>
       </div>
 
       <div class="grid gap-3 md:grid-cols-2">
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-          <div class="text-[10px] uppercase tracking-[0.18em] text-slate-400">Salón</div>
-          <div class="mt-2 font-semibold text-slate-900">${item.salon?.nombre} · ${item.salon?.edificio}</div>
+          <div class="text-[10px] uppercase tracking-[0.18em] text-slate-400">Sal�n</div>
+          <div class="mt-2 font-semibold text-slate-900">${item.salon?.nombre} � ${item.salon?.edificio}</div>
         </div>
       </div>
     </div>
@@ -638,9 +834,9 @@ function buildModalContent(item) {
 
     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
       <div class="mb-2 flex items-center justify-between"><span class="text-slate-500">Email</span><strong class="text-slate-900">${item.profesor?.email}</strong></div>
-      <div class="mb-2 flex items-center justify-between"><span class="text-slate-500">Teléfono</span><strong class="text-slate-900">${item.profesor?.telefono}</strong></div>
+      <div class="mb-2 flex items-center justify-between"><span class="text-slate-500">Tel�fono</span><strong class="text-slate-900">${item.profesor?.telefono}</strong></div>
       <div class="mb-2 flex items-center justify-between"><span class="text-slate-500">Oficina</span><strong class="text-slate-900">${item.profesor?.oficina}</strong></div>
-      <div class="flex items-center justify-between"><span class="text-slate-500">Atención</span><strong class="text-slate-900">${item.profesor?.horarioAtencion}</strong></div>
+      <div class="flex items-center justify-between"><span class="text-slate-500">Atenci�n</span><strong class="text-slate-900">${item.profesor?.horarioAtencion}</strong></div>
     </div>
   `;
 }
@@ -650,7 +846,7 @@ function openModal(itemId) {
 
   if (!item) return;
 
-  modalTitle.textContent = `${item.carrera || item.materia?.programa || 'Programa académico'} · ${item.semestre || 'Semestre'}`;
+  modalTitle.textContent = `${item.carrera || item.materia?.programa || 'Programa acad�mico'} � ${item.semestre || 'Semestre'}`;
   modalContent.innerHTML = buildModalContent(item);
   modal.classList.remove('hidden');
   modal.classList.add('flex');
@@ -667,9 +863,16 @@ function openAdmin() {
 }
 
 function adminHeaders() {
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` };
-}
+  const headers = {
+    'Content-Type': 'application/json'
+  };
 
+  if (adminToken) {
+    headers.Authorization = `Bearer ${adminToken}`;
+  }
+
+  return headers;
+}
 async function adminLoginRequest() {
   const result = await fetchJson(`${API_BASE_URL}/api/v1/admin/login`, {
     method: 'POST',
@@ -692,22 +895,24 @@ async function loadAdminEditor() {
   if (!scheduleRes.success) throw new Error(scheduleRes.message || 'No se pudo cargar el panel');
   adminLogin.classList.add('hidden');
   adminEditor.classList.remove('hidden');
+  state.members = getStoredMembers();
   renderAdminRows(scheduleRes.data, teachersRes.data, roomsRes.data, subjectsRes.data);
+  renderMemberTable();
 }
 
 function renderAdminRows(schedule, teachers, rooms, subjects) {
-  document.getElementById('newTeacher').innerHTML = teachers.map((teacher) => `<option value="${teacher.id}">${teacher.nombre}</option>`).join('');
-  document.getElementById('newRoom').innerHTML = rooms.map((room) => `<option value="${room.id}">${room.nombre}</option>`).join('');
-  document.getElementById('newSubject').innerHTML = subjects.map((subject) => `<option value="${subject.id}">${subject.programa}</option>`).join('');
+  document.getElementById('newTeacher').value = '';
+  document.getElementById('newRoom').value = '';
+  document.getElementById('newSubject').value = '';
   adminRows.innerHTML = schedule.map((item) => `
     <form class="admin-row grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-6" data-id="${item.id}">
-      <div class="md:col-span-2"><label class="field-label">Programa</label><input name="carrera" value="${item.carrera}" class="field-input" /></div>
-      <div><label class="field-label">Semestre</label><input name="semestre" value="${item.semestre}" class="field-input" /></div>
-      <div><label class="field-label">Salón</label><select name="salonId" class="field-input">${rooms.map((room) => `<option value="${room.id}" ${room.id === item.salonId ? 'selected' : ''}>${room.nombre}</option>`).join('')}</select></div>
-      <div class="md:col-span-2"><label class="field-label">Docente</label><select name="profesorId" class="field-input">${teachers.map((teacher) => `<option value="${teacher.id}" ${teacher.id === item.profesorId ? 'selected' : ''}>${teacher.nombre}</option>`).join('')}</select></div>
-      <div><label class="field-label">Desde</label><input name="horaInicio" value="${item.horaInicio}" class="field-input" /></div>
-      <div><label class="field-label">Hasta</label><input name="horaFin" value="${item.horaFin}" class="field-input" /></div>
-      <div><label class="field-label">Modalidad</label><select name="modalidad" class="field-input"><option ${item.modalidad === 'Presencial' ? 'selected' : ''}>Presencial</option><option ${item.modalidad === 'Intensiva' ? 'selected' : ''}>Intensiva</option><option>Virtual</option></select></div>
+      <div class="md:col-span-2"><label class="field-label">Programa</label><input name="carrera" value="${item.carrera || ''}" class="field-input" /></div>
+      <div><label class="field-label">Semestre</label><input name="semestre" value="${item.semestre || ''}" class="field-input" /></div>
+      <div><label class="field-label">Salón</label><input name="salonId" value="${item.salonId || item.salon?.nombre || ''}" class="field-input" /></div>
+      <div class="md:col-span-2"><label class="field-label">Docente</label><input name="profesorId" value="${item.profesorId || item.profesor?.nombre || ''}" class="field-input" /></div>
+      <div><label class="field-label">Desde</label><input name="horaInicio" value="${item.horaInicio || ''}" class="field-input" /></div>
+      <div><label class="field-label">Hasta</label><input name="horaFin" value="${item.horaFin || ''}" class="field-input" /></div>
+      <div><label class="field-label">Modalidad</label><input name="modalidad" value="${item.modalidad || 'Presencial'}" class="field-input" /></div>
       <div class="flex items-end gap-2"><button class="save-admin flex-1 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white">Guardar</button><button type="button" class="delete-admin rounded-xl border border-rose-200 px-3 py-2.5 text-sm font-semibold text-rose-600" title="Eliminar"><i class="ph ph-trash"></i></button></div>
       <p class="admin-status md:col-span-6 text-sm"></p>
     </form>
@@ -729,7 +934,7 @@ async function saveAdminRow(event) {
 }
 
 async function deleteAdminRow(form) {
-  if (!confirm('¿Eliminar este horario?')) return;
+  if (!confirm('�Eliminar este horario?')) return;
   const result = await fetchJson(`${API_BASE_URL}/api/v1/admin/horarios/${form.dataset.id}`, { method: 'DELETE', headers: adminHeaders() });
   await loadAdminEditor();
   await loadData();
@@ -762,6 +967,54 @@ document.addEventListener('click', (event) => {
   document.querySelectorAll('.franja-btn').forEach((item) => item.classList.toggle('active', item === button));
   render();
 });
+
+adminTabButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    const target = button.dataset.adminTab;
+    adminTabButtons.forEach((tab) => tab.classList.toggle('active', tab === button));
+    adminTabPanels.forEach((panel) => panel.classList.toggle('hidden', panel.id !== `${target === 'schedules' ? 'adminSchedulesTab' : target === 'members' ? 'adminMembersTab' : 'adminToolsTab'}`));
+  });
+});
+
+if (openMemberFormButton) {
+  openMemberFormButton.addEventListener('click', () => {
+    document.querySelector('[data-admin-tab="members"]').click();
+    document.getElementById('memberName').focus();
+  });
+}
+
+if (memberForm) {
+  memberForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const payload = Object.fromEntries(new FormData(memberForm).entries());
+    const members = getStoredMembers();
+    const memberId = memberForm.dataset.memberId || `member-${Date.now()}`;
+    const nextMembers = memberForm.dataset.memberId
+      ? members.map((member) => member.id === memberId ? { ...member, ...payload, id: memberId } : member)
+      : [...members, { ...payload, id: memberId }];
+
+    saveStoredMembers(nextMembers);
+    renderMemberTable();
+    memberForm.reset();
+    delete memberForm.dataset.memberId;
+    memberForm.querySelector('button[type="submit"]').textContent = 'Guardar miembro';
+    importStatus.textContent = 'Miembro guardado correctamente.';
+  });
+}
+
+if (excelImportInput) {
+  excelImportInput.addEventListener('change', importExcelFile);
+}
+
+if (document.getElementById('exportScheduleButton')) {
+  document.getElementById('exportScheduleButton').addEventListener('click', () => exportAdminExcel('horarios'));
+}
+
+if (document.getElementById('exportMembersButton')) {
+  document.getElementById('exportMembersButton').addEventListener('click', () => exportAdminExcel('miembros'));
+  document.getElementById('exportMembersButtonSecondary').addEventListener('click', () => exportAdminExcel('miembros'));
+  document.getElementById('exportMembersOnlyButton').addEventListener('click', () => exportAdminExcel('miembros'));
+}
 searchInput.addEventListener('focus', () => {
   if (!searchInput.value.trim()) renderSearchHistory();
 });
@@ -884,7 +1137,7 @@ myScheduleBtn.addEventListener('click', async () => {
 });
 
 loadData().catch((error) => {
-  cardsContainer.innerHTML = '<div class="glass rounded-3xl p-6 text-rose-600">No se pudo conectar con el servidor. Verifica tu conexión a internet.</div>';
+  cardsContainer.innerHTML = '<div class="glass rounded-3xl p-6 text-rose-600">No se pudo conectar con el servidor. Verifica tu conexi�n a internet.</div>';
   forceRefreshButton.classList.remove('hidden');
 });
 cargarCorte6();
@@ -894,3 +1147,6 @@ if (pwaSplash && window.matchMedia('(display-mode: standalone)').matches) {
 }
 
 applyLanguage();
+
+
+

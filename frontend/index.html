@@ -15,7 +15,8 @@
     <meta property="og:image" content="/icons/icon-512x512.png" />
     <title>Academic Pulse</title>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link rel="stylesheet" href="./styles.css?v=4" />
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="./styles.css?v=5" />
   </head>
   <body class="min-h-screen antialiased">
     <div id="pwaSplash" class="pwa-splash" aria-hidden="true">
@@ -167,12 +168,12 @@
         <div class="mb-6 flex items-center justify-between">
           <div>
             <p class="text-[10px] uppercase tracking-[0.22em] text-slate-400">Panel protegido</p>
-            <h2 class="text-2xl font-bold text-slate-900">Administrar horarios</h2>
+            <h2 class="text-2xl font-bold text-slate-900">Administrar horarios y miembros</h2>
           </div>
           <button id="closeAdmin" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700"><i class="ph ph-x"></i></button>
         </div>
         <div id="adminLogin" class="mx-auto max-w-md rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <p class="mb-4 text-sm text-slate-500">Ingresa con tu usuario de administrador para editar la programación.</p>
+          <p class="mb-4 text-sm text-slate-500">Ingresa con tu usuario de administrador para editar la programación, añadir miembros y gestionar importación/exportación.</p>
           <div class="space-y-3">
             <input id="adminUsername" value="admin" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none" placeholder="Usuario" />
             <input id="adminPassword" type="password" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none" placeholder="Contraseña" />
@@ -182,26 +183,74 @@
         </div>
         <div id="adminEditor" class="hidden">
           <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <p class="text-sm text-slate-500">Edita el registro y guarda los cambios. Se reflejarán en la consulta estudiantil.</p>
-            <div class="flex gap-2">
+            <p class="text-sm text-slate-500">Aquí puedes escribir, editar y actualizar todo lo que necesites con rapidez.</p>
+            <div class="flex flex-wrap gap-2">
               <button id="createScheduleButton" class="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white">+ Nuevo horario</button>
+              <button id="openMemberFormButton" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">+ Añadir miembro</button>
+              <button id="exportMembersButton" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">Exportar Excel</button>
               <button id="adminLogout" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700">Cerrar sesión</button>
             </div>
           </div>
-          <form id="createScheduleForm" class="mb-5 hidden grid gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 md:grid-cols-6">
-            <input name="carrera" class="field-input md:col-span-2" placeholder="Programa" required />
-            <input name="semestre" class="field-input" placeholder="Semestre" required />
-            <input name="fecha" class="field-input md:col-span-2" placeholder="Fecha o periodo" required />
-            <select name="materiaId" id="newSubject" class="field-input" required></select>
-            <select name="profesorId" id="newTeacher" class="field-input md:col-span-2" required></select>
-            <select name="salonId" id="newRoom" class="field-input" required></select>
-            <input name="horaInicio" class="field-input" value="06:30" placeholder="Desde" required />
-            <input name="horaFin" class="field-input" value="08:45" placeholder="Hasta" required />
-            <select name="modalidad" class="field-input" required><option>Presencial</option><option>Intensiva</option><option>Virtual</option></select>
-            <button class="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white md:col-span-2">Crear horario</button>
-            <p id="createScheduleMessage" class="text-sm md:col-span-6"></p>
-          </form>
-          <div id="adminRows" class="space-y-3"></div>
+
+          <div class="mb-5 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <button type="button" class="admin-tab-btn active rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" data-admin-tab="schedules">Horarios</button>
+            <button type="button" class="admin-tab-btn rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" data-admin-tab="members">Miembros</button>
+            <button type="button" class="admin-tab-btn rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" data-admin-tab="tools">Importar / Exportar</button>
+          </div>
+
+          <div id="adminSchedulesTab" class="admin-tab-panel">
+            <form id="createScheduleForm" class="mb-5 hidden grid gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 md:grid-cols-6">
+              <input name="carrera" class="field-input md:col-span-2" placeholder="Programa" required />
+              <input name="semestre" class="field-input" placeholder="Semestre" required />
+              <input name="fecha" class="field-input md:col-span-2" placeholder="Fecha o periodo" required />
+              <input name="materiaId" id="newSubject" class="field-input" placeholder="Materia" required />
+              <input name="profesorId" id="newTeacher" class="field-input md:col-span-2" placeholder="Docente" required />
+              <input name="salonId" id="newRoom" class="field-input" placeholder="Salón" required />
+              <input name="horaInicio" class="field-input" value="06:30" placeholder="Desde" required />
+              <input name="horaFin" class="field-input" value="08:45" placeholder="Hasta" required />
+              <input name="modalidad" class="field-input" value="Presencial" placeholder="Modalidad" required />
+              <button class="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white md:col-span-2">Crear horario</button>
+              <p id="createScheduleMessage" class="text-sm md:col-span-6"></p>
+            </form>
+            <div id="adminRows" class="space-y-3"></div>
+          </div>
+
+          <div id="adminMembersTab" class="admin-tab-panel hidden">
+            <form id="memberForm" class="mb-5 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-3">
+              <input id="memberName" name="nombre" class="field-input" placeholder="Nombre completo" required />
+              <input id="memberRole" name="rol" class="field-input" placeholder="Rol / cargo" required />
+              <input id="memberEmail" name="email" type="email" class="field-input" placeholder="Correo electrónico" required />
+              <input id="memberPhone" name="telefono" class="field-input" placeholder="Teléfono" />
+              <input id="memberDepartment" name="departamento" class="field-input" placeholder="Departamento" />
+              <button class="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Guardar miembro</button>
+            </form>
+            <div class="mb-3 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-slate-900">Lista de miembros</h3>
+              <button id="exportMembersOnlyButton" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">Descargar XLSX</button>
+            </div>
+            <div id="memberTable" class="space-y-2"></div>
+          </div>
+
+          <div id="adminToolsTab" class="admin-tab-panel hidden">
+            <div class="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+              <div>
+                <p class="mb-2 text-sm font-semibold text-slate-700">Importar desde Excel</p>
+                <label for="excelImportInput" class="flex cursor-pointer items-center justify-center rounded-2xl border border-dashed border-blue-300 bg-blue-50 px-4 py-6 text-sm font-semibold text-blue-700">
+                  Seleccionar archivo .xlsx o .csv
+                </label>
+                <input id="excelImportInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
+                <p class="mt-2 text-xs text-slate-500">Puedes importar miembros o horarios. El archivo debe tener columnas claras como nombre, email, rol, programa, semestre, docente, salón, fecha, horaInicio, horaFin.</p>
+              </div>
+              <div>
+                <p class="mb-2 text-sm font-semibold text-slate-700">Exportar datos</p>
+                <div class="flex flex-wrap gap-2">
+                  <button id="exportScheduleButton" class="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white">Exportar horarios</button>
+                  <button id="exportMembersButtonSecondary" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">Exportar miembros</button>
+                </div>
+                <p id="importStatus" class="mt-3 text-sm text-slate-500">Sin importaciones aún.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
