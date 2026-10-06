@@ -175,6 +175,7 @@ async function cargarCorte6() {
       throw new Error('La respuesta de horarios del Corte 6 no tiene el formato esperado');
     }
     horariosCorte6 = result.data;
+    renderFavorites();
     render();
   } catch (error) {
     console.error('Error cargando horarios del Corte 6:', error);
@@ -389,6 +390,12 @@ function getFavorites() {
   }
 }
 
+function getAllSchedule() {
+  return [...new Map(
+    [...state.allSchedule, ...horariosCorte6].map((item) => [item.id, item])
+  ).values()];
+}
+
 function isFavorite(id) {
   return getFavorites().includes(id);
 }
@@ -402,9 +409,10 @@ function toggleFavorite(id) {
 }
 
 function renderFavorites() {
-  const items = getFavorites().map((id) => state.allSchedule.find((item) => item.id === id)).filter(Boolean);
+  const schedule = getAllSchedule();
+  const items = getFavorites().map((id) => schedule.find((item) => item.id === id)).filter(Boolean);
   favoritesSection.classList.toggle('hidden', !items.length);
-  favoritesContainer.innerHTML = items.map((item) => `<article class="favorite-card"><strong>${item.materia?.nombre || item.carrera || 'Clase'}</strong><span>${item.profesor?.nombre || 'Docente'} � ${item.horaInicio} - ${item.horaFin}</span><button type="button" data-favorite-remove="${item.id}">?</button></article>`).join('');
+  favoritesContainer.innerHTML = items.map((item) => `<article class="favorite-card"><strong>${item.materia?.nombre || item.carrera || 'Clase'}</strong><span>${item.profesor?.nombre || item.docente || 'Docente'} � ${item.horaInicio} - ${item.horaFin}</span><button type="button" data-favorite-remove="${item.id}" aria-label="Quitar de favoritos" title="Quitar de favoritos"><i class="ph-fill ph-star" aria-hidden="true"></i></button></article>`).join('');
   favoritesContainer.querySelectorAll('[data-favorite-remove]').forEach((button) => button.addEventListener('click', () => toggleFavorite(button.dataset.favoriteRemove)));
 }
 
@@ -566,7 +574,7 @@ function getFilteredSchedule() {
   const career = careerFilter?.value || '';
   const room = roomFilter?.value || '';
 
-  const source = verTodos ? [...horariosCorte6, ...state.allSchedule] : horariosCorte6;
+  const source = verTodos ? getAllSchedule() : horariosCorte6;
 
   let lista = source.filter((item) => {
     const matchesSemester = !semester || item.semestre === semester;
@@ -631,12 +639,12 @@ function renderCards(items, agrupar = false) {
       const program = item.programa || item.carrera || item.materia?.programa || 'Sin programa';
       const module = item.modulo || item.materia?.nombre || 'Sin m�dulo';
       const teacher = item.docente || item.profesor?.nombre || 'Sin docente';
-      const classroom = item.aula || item.salon?.nombre || '�';
+      const classroom = item.aula || item.salon?.nombre || 'Sin asignar';
       const teacherInitials = item.profesor?.foto || teacher.split(' ').map((part) => part[0]).join('').slice(0, 2);
       return `
         <article class="glass result-card rounded-3xl p-5">
           <div class="mb-4 flex items-start justify-between gap-3">
-            <div class="card-actions"><button class="favorite-star ${isFavorite(item.id) ? 'is-favorite' : ''}" type="button" data-favorite="${item.id}" aria-label="${isFavorite(item.id) ? 'Quitar favorito' : 'Agregar favorito'}">?</button></div>
+            <div class="card-actions"><button class="favorite-star ${isFavorite(item.id) ? 'is-favorite' : ''}" type="button" data-favorite="${item.id}" aria-label="${isFavorite(item.id) ? 'Quitar favorito' : 'Agregar favorito'}" aria-pressed="${isFavorite(item.id)}"><i class="${isFavorite(item.id) ? 'ph-fill ph-star' : 'ph ph-star'}" aria-hidden="true"></i></button></div>
           </div>
 
           <p class="mb-2 text-sm text-slate-400">${program} � ${item.semestre || 'Semestre'}</p>
@@ -710,7 +718,7 @@ function renderCards(items, agrupar = false) {
 }
 
 function shareSchedule(itemId) {
-  const item = state.allSchedule.find((entry) => entry.id === itemId);
+  const item = getAllSchedule().find((entry) => entry.id === itemId);
   if (!item) return;
   const detail = `${item.profesor?.nombre || 'Docente'} - ${item.materia?.nombre || 'Materia'} - ${item.horaInicio} - ${item.horaFin}`;
   window.open(`https://wa.me/?text=${encodeURIComponent(`Consulta en ELYON YIREH: ${detail}`)}`, '_blank', 'noopener,noreferrer');
@@ -1147,5 +1155,3 @@ if (pwaSplash && window.matchMedia('(display-mode: standalone)').matches) {
 }
 
 applyLanguage();
-
-
