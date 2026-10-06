@@ -11,7 +11,7 @@ const state = {
 const MEMBER_STORAGE_KEY = 'elyon_yireh_members';
 
 let horariosCorte6 = [];
-let verTodos = false;
+let verTodos = true;
 let franjaSeleccionada = 'todas';
 
 const searchInput = document.getElementById('searchInput');
@@ -1147,6 +1147,5 @@ if (pwaSplash && window.matchMedia('(display-mode: standalone)').matches) {
 }
 
 applyLanguage();
-
 
 
