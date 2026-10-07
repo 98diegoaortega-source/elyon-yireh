@@ -554,17 +554,31 @@ app.patch('/api/v1/admin/horarios/:id', requireAdmin, async (req, res, next) => 
     }
     updates.estudianteIds = uniqueStudentIds;
   }
+  const freeTextReferences = [
+    { inputField: 'salon', valueField: 'aula', idField: 'salonId', catalog: salones, label: 'Salón' },
+    { inputField: 'docente', valueField: 'docente', idField: 'profesorId', catalog: profesores, label: 'Docente' }
+  ];
+  for (const { inputField, valueField, idField, catalog, label } of freeTextReferences) {
+    if (!Object.prototype.hasOwnProperty.call(updates, inputField)) continue;
+    if (typeof updates[inputField] !== 'string') {
+      return res.status(400).json({ success: false, message: `El campo ${label} debe ser texto.` });
+    }
+    const value = updates[inputField].trim();
+    const match = catalog.find((entity) => normalizeText(entity.nombre) === normalizeText(value));
+    updates[valueField] = value;
+    updates[idField] = match?.id || null;
+  }
   const referenceFields = [
     ['materiaId', getMateriaById, 'Materia'],
     ['profesorId', getProfesorById, 'Docente'],
     ['salonId', getSalonById, 'Salón']
   ];
   for (const [field, findById, label] of referenceFields) {
-    if (Object.prototype.hasOwnProperty.call(updates, field) && !findById(updates[field])) {
+    if (Object.prototype.hasOwnProperty.call(updates, field) && updates[field] != null && !findById(updates[field])) {
       return res.status(400).json({ success: false, message: `${label} no válido` });
     }
   }
-  const allowedFields = ['horaInicio', 'horaFin', 'fecha', 'modalidad', 'semestre', 'carrera', 'materiaId', 'profesorId', 'salonId', 'estudianteIds'];
+  const allowedFields = ['horaInicio', 'horaFin', 'fecha', 'modalidad', 'semestre', 'carrera', 'materiaId', 'profesorId', 'salonId', 'aula', 'docente', 'estudianteIds'];
   allowedFields.forEach((field) => {
     if (Object.prototype.hasOwnProperty.call(updates, field)) schedule[field] = updates[field];
   });

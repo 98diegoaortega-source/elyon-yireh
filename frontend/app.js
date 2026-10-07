@@ -1008,7 +1008,7 @@ async function loadAdminEditor() {
   adminLogin.classList.add('hidden');
   adminEditor.classList.remove('hidden');
   state.members = getStoredMembers();
-  renderAdminRows(scheduleRes.data, teachersRes.data, roomsRes.data, subjectsRes.data, studentsRes.data || []);
+  renderAdminRows(scheduleRes.data, studentsRes.data || []);
   renderMemberTable();
   window.renderAdminEntities({
     profesores: teachersRes.data || [],
@@ -1018,25 +1018,13 @@ async function loadAdminEditor() {
   });
 }
 
-function renderAdminRows(schedule, teachers, rooms, subjects, students) {
+function renderAdminRows(schedule, students) {
   document.getElementById('newTeacher').value = '';
   document.getElementById('newRoom').value = '';
   document.getElementById('newSubject').value = '';
-  const normalizeCatalogValue = (value) => String(value || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-  const findCatalogId = (value, records) => {
-    if (!value) return '';
-    return records.find((record) =>
-      record.id === value || normalizeCatalogValue(record.nombre) === normalizeCatalogValue(value)
-    )?.id || '';
-  };
   adminRows.innerHTML = schedule.map((item) => {
-    const roomName = item.aula || item.salon?.nombre || '';
-    const teacherName = item.docente || item.profesor?.nombre || '';
-    const roomId = findCatalogId(item.salonId, rooms) || findCatalogId(roomName, rooms);
-    const teacherId = findCatalogId(item.profesorId, teachers) || findCatalogId(teacherName, teachers);
+    const roomName = item.salon?.nombre || item.aula || item.salonId || '';
+    const teacherName = item.profesor?.nombre || item.docente || item.profesorId || '';
     const studentIds = Array.isArray(item.estudianteIds) ? item.estudianteIds : [];
     const studentOptions = students.map((student) => {
       const details = [student.carrera || student.programa, student.semestre].filter(Boolean).join(' · ');
@@ -1047,14 +1035,8 @@ function renderAdminRows(schedule, teachers, rooms, subjects, students) {
     <form class="admin-row grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-6" data-id="${item.id}">
       <div class="md:col-span-2"><label class="field-label">Programa</label><input name="carrera" value="${escapeHTML(item.carrera || item.programa || '')}" class="field-input" /></div>
       <div><label class="field-label">Semestre</label><input name="semestre" value="${item.semestre || ''}" class="field-input" /></div>
-      <div><label class="field-label">Salón</label><select name="salonId" required class="field-input">
-        <option value="" disabled ${roomId ? '' : 'selected'}>${roomId ? 'Selecciona salón' : `Sin coincidencia: ${escapeHTML(roomName || 'salón')}`}</option>
-        ${rooms.map((room) => `<option value="${escapeHTML(room.id)}" ${room.id === roomId ? 'selected' : ''}>${escapeHTML(room.nombre)}</option>`).join('')}
-      </select></div>
-      <div class="md:col-span-2"><label class="field-label">Docente</label><select name="profesorId" required class="field-input">
-        <option value="" disabled ${teacherId ? '' : 'selected'}>${teacherId ? 'Selecciona docente' : `Sin coincidencia: ${escapeHTML(teacherName || 'docente')}`}</option>
-        ${teachers.map((teacher) => `<option value="${escapeHTML(teacher.id)}" ${teacher.id === teacherId ? 'selected' : ''}>${escapeHTML(teacher.nombre)}</option>`).join('')}
-      </select></div>
+      <div><label class="field-label">Salón</label><input name="salon" type="text" value="${escapeHTML(roomName)}" required class="field-input" /></div>
+      <div class="md:col-span-2"><label class="field-label">Docente</label><input name="docente" type="text" value="${escapeHTML(teacherName)}" required class="field-input" /></div>
       <div><label class="field-label">Desde</label><input name="horaInicio" value="${item.horaInicio || ''}" class="field-input" /></div>
       <div><label class="field-label">Hasta</label><input name="horaFin" value="${item.horaFin || ''}" class="field-input" /></div>
       <div><label class="field-label">Modalidad</label><input name="modalidad" value="${item.modalidad || 'Presencial'}" class="field-input" /></div>

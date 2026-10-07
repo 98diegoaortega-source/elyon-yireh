@@ -359,7 +359,7 @@
     </aside>
 
     <script src="./api-config.js?v=1"></script>
-    <script src="./app.js?v=7"></script>
+    <script src="./app.js?v=8"></script>
     <script src="./admin-entities.js?v=1"></script>
     <script>
       function forceFrontendUpdate() {
@@ -383,7 +383,7 @@
 
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js?v=7').catch((error) => {
+          navigator.serviceWorker.register('/service-worker.js?v=8').catch((error) => {
             console.error('No se pudo registrar el Service Worker:', error);
           });
         });
