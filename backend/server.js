@@ -15,6 +15,13 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin2026';
+// Evita iniciar en producción con las credenciales predeterminadas o marcadores de ejemplo.
+if (process.env.NODE_ENV === 'production') {
+  const unsafeAdminValues = new Set(['admin', 'admin2026', 'CAMBIAR_EN_PRODUCCION']);
+  if (unsafeAdminValues.has(ADMIN_USER) || unsafeAdminValues.has(ADMIN_PASSWORD)) {
+    throw new Error('Configura ADMIN_USER y ADMIN_PASSWORD con valores seguros antes de iniciar en producción.');
+  }
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'development-only-change-me';
 const configuredOrigins = process.env.CLIENT_ORIGIN || [
   'http://localhost:5500',
@@ -207,7 +214,19 @@ async function safeSaveState(state) {
   try {
     await saveState(state);
   } catch (error) {
-    console.warn('No se pudo guardar en PostgreSQL; se mantienen los datos en memoria:', error.message);
+    console.error('No se pudo guardar en PostgreSQL:', error.code || 'SIN_CODIGO', error.message);
+    throw error;
+  }
+}
+
+// Restaura el estado en memoria y responde sin filtrar detalles de PostgreSQL.
+async function persistAdminChange(res, state, rollback) {
+  try {
+    await safeSaveState(state);
+    return null;
+  } catch {
+    rollback();
+    return res.status(500).json({ success: false, message: 'No se pudo guardar el cambio. Intenta de nuevo.' });
   }
 }
 
@@ -248,7 +267,8 @@ app.post('/api/v1/analytics/track', async (req, res) => {
   try {
     await trackAnalytics(tipo, valor, req.ip);
   } catch (error) {
-    console.warn('No se pudo guardar analytics:', error.message);
+    console.error('No se pudo guardar analytics:', error.code || 'SIN_CODIGO', error.message);
+    return res.status(500).json({ success: false, message: 'No se pudo guardar el cambio. Intenta de nuevo.' });
   }
   return res.json({ success: true });
 });
@@ -352,7 +372,12 @@ app.post('/api/v1/admin/horarios', requireAdmin, async (req, res, next) => {
 
   horarios.push(schedule);
   touchScheduleUpdate();
-  await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
+  const saveFailure = await persistAdminChange(res, { profesores, materias, salones, estudiantes, horarios }, () => {
+    const index = horarios.findIndex((item) => item.id === schedule.id);
+    if (index !== -1) horarios.splice(index, 1);
+    touchScheduleUpdate();
+  });
+  if (saveFailure) return saveFailure;
   return res.status(201).json({ success: true, data: hydrateSchedule(schedule) });
 });
 
@@ -363,13 +388,18 @@ app.patch('/api/v1/admin/horarios/:id', requireAdmin, async (req, res, next) => 
     return res.status(404).json({ success: false, message: 'Horario no encontrado' });
   }
 
+  const previousSchedule = { ...schedule };
   const allowedFields = ['horaInicio', 'horaFin', 'fecha', 'modalidad', 'semestre', 'carrera', 'materiaId', 'profesorId', 'salonId'];
   allowedFields.forEach((field) => {
     if (Object.prototype.hasOwnProperty.call(req.body, field)) schedule[field] = req.body[field];
   });
 
   touchScheduleUpdate();
-  await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
+  const saveFailure = await persistAdminChange(res, { profesores, materias, salones, estudiantes, horarios }, () => {
+    Object.assign(schedule, previousSchedule);
+    touchScheduleUpdate();
+  });
+  if (saveFailure) return saveFailure;
   return res.json({ success: true, data: hydrateSchedule(schedule) });
 });
 
@@ -378,9 +408,13 @@ app.delete('/api/v1/admin/horarios/:id', requireAdmin, async (req, res, next) =>
 
   if (scheduleIndex === -1) return res.status(404).json({ success: false, message: 'Horario no encontrado' });
 
-  horarios.splice(scheduleIndex, 1);
+  const [deletedSchedule] = horarios.splice(scheduleIndex, 1);
   touchScheduleUpdate();
-  await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
+  const saveFailure = await persistAdminChange(res, { profesores, materias, salones, estudiantes, horarios }, () => {
+    horarios.splice(scheduleIndex, 0, deletedSchedule);
+    touchScheduleUpdate();
+  });
+  if (saveFailure) return saveFailure;
   return res.json({ success: true, message: 'Horario eliminado' });
 });
 
@@ -389,11 +423,13 @@ app.patch('/api/v1/admin/profesores/:id', requireAdmin, async (req, res, next) =
 
   if (!professor) return res.status(404).json({ success: false, message: 'Profesor no encontrado' });
 
+  const previousProfessor = { ...professor };
   ['nombre', 'email', 'telefono', 'departamento', 'oficina', 'horarioAtencion'].forEach((field) => {
     if (typeof req.body[field] === 'string') professor[field] = req.body[field].trim();
   });
 
-  await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
+  const saveFailure = await persistAdminChange(res, { profesores, materias, salones, estudiantes, horarios }, () => Object.assign(professor, previousProfessor));
+  if (saveFailure) return saveFailure;
   return res.json({ success: true, data: professor });
 });
 
@@ -401,11 +437,13 @@ app.patch('/api/v1/admin/materias/:id', requireAdmin, async (req, res, next) => 
   const subject = getMateriaById(req.params.id);
   if (!subject) return res.status(404).json({ success: false, message: 'Materia no encontrada' });
 
+  const previousSubject = { ...subject };
   ['nombre', 'codigo', 'programa', 'departamento'].forEach((field) => {
     if (typeof req.body[field] === 'string') subject[field] = req.body[field].trim();
   });
 
-  await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
+  const saveFailure = await persistAdminChange(res, { profesores, materias, salones, estudiantes, horarios }, () => Object.assign(subject, previousSubject));
+  if (saveFailure) return saveFailure;
   return res.json({ success: true, data: subject });
 });
 

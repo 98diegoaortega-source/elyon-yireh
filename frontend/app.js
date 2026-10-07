@@ -126,7 +126,9 @@ async function fetchJson(url, options = {}) {
     const result = contentType.includes('application/json') ? await response.json() : null;
 
     if (!response.ok) {
-      throw new Error(result?.message || `Error HTTP ${response.status}`);
+      const apiError = new Error(result?.message || result?.error || `Error HTTP ${response.status}`);
+      apiError.name = 'ApiError';
+      throw apiError;
     }
 
     if (!contentType.includes('application/json')) {
@@ -136,6 +138,8 @@ async function fetchJson(url, options = {}) {
     return result;
   } catch (error) {
     console.error(`Error consultando ${url}:`, error);
+    // Conserva el mensaje real enviado por la API para que la interfaz pueda mostrarlo.
+    if (error.name === 'ApiError') throw error;
     const friendlyError = new Error(error.name === 'AbortError'
       ? 'No se pudo conectar con el servidor. Verifica tu conexi�n a internet.'
       : 'No se pudo conectar con el servidor. Verifica tu conexi�n a internet.');
@@ -315,30 +319,90 @@ async function exportAdminExcel(type = 'horarios') {
 
 function mapImportedRowsToMembers(rows) {
   return rows
-    .filter((row) => row.nombre || row.email || row.rol)
     .map((row, index) => ({
+      rowNumber: index + 1,
       id: `member-${Date.now()}-${index}`,
-      nombre: row.nombre || row.Nombre || `Miembro ${index + 1}`,
-      rol: row.rol || row.Rol || 'Miembro',
-      email: row.email || row.Email || '',
-      telefono: row.telefono || row.Telefono || '',
-      departamento: row.departamento || row.Departamento || ''
-    }));
+      nombre: getImportedValue(row, 'nombre'),
+      rol: getImportedValue(row, 'rol') || 'Miembro',
+      email: getImportedValue(row, 'email'),
+      telefono: getImportedValue(row, 'telefono'),
+      departamento: getImportedValue(row, 'departamento')
+    }))
+    .filter((member) => member.nombre || member.email || getImportedValue(rows[member.rowNumber - 1], 'rol'));
 }
 
-function mapImportedRowsToSchedule(rows) {
-  return rows.filter((row) => row.programa || row.carrera || row.semestre || row.fecha || row.horaInicio || row.horaFin || row.docente || row.profesor || row.salon || row.materia)
-    .map((row) => ({
-      carrera: row.programa || row.carrera || row.Programa || 'Programa por definir',
-      semestre: row.semestre || row.Semestre || '1',
-      fecha: row.fecha || row.Fecha || 'Sin fecha',
-      materiaId: row.materiaId || row.materia || row.Materia || 'mat-default',
-      profesorId: row.profesorId || row.docente || row.Profesor || 'prof-default',
-      salonId: row.salonId || row.salon || row.Salon || 'sal-default',
-      horaInicio: row.horaInicio || row.HoraInicio || '06:30',
-      horaFin: row.horaFin || row.HoraFin || '08:45',
-      modalidad: row.modalidad || row.Modalidad || 'Presencial'
-    }));
+// Lee encabezados ignorando mayúsculas, espacios y tildes para aceptar variantes del Excel.
+function getImportedValue(row, ...keys) {
+  const normalizedKeys = new Set(keys.map((key) => normalize(key).replace(/[^\p{L}\p{N}]/gu, '')));
+  const entry = Object.entries(row).find(([key, value]) =>
+    normalizedKeys.has(normalize(key).replace(/[^\p{L}\p{N}]/gu, '')) && String(value).trim()
+  );
+  return entry ? String(entry[1]).trim() : '';
+}
+
+function resolveImportedId(value, records, label, searchableFields) {
+  const normalizedValue = normalize(value);
+  if (!normalizedValue) throw new Error(`Falta ${label}.`);
+
+  const matches = records.filter((record) => searchableFields.some((field) =>
+    record[field] && normalize(record[field]) === normalizedValue
+  ));
+  const uniqueMatches = [...new Map(matches.map((record) => [record.id, record])).values()];
+  if (!uniqueMatches.length) throw new Error(`${label} «${value}» no existe en el catálogo.`);
+  if (uniqueMatches.length > 1) throw new Error(`${label} «${value}» coincide con varios registros; usa su ID.`);
+  return uniqueMatches[0].id;
+}
+
+function mapImportedRowToSchedule(row, catalogs) {
+  const materia = getImportedValue(row, 'materiaId', 'materia', 'asignatura');
+  const profesor = getImportedValue(row, 'profesorId', 'docente', 'profesor');
+  const salon = getImportedValue(row, 'salonId', 'salon', 'aula');
+  const carrera = getImportedValue(row, 'carrera', 'programa');
+  const semestre = getImportedValue(row, 'semestre');
+  const fecha = getImportedValue(row, 'fecha');
+  const horaInicio = getImportedValue(row, 'horaInicio', 'inicio');
+  const horaFin = getImportedValue(row, 'horaFin', 'fin');
+  const modalidad = getImportedValue(row, 'modalidad');
+
+  const required = { carrera, semestre, fecha, horaInicio, horaFin, modalidad };
+  const missing = Object.entries(required).filter(([, value]) => !value).map(([field]) => field);
+  if (missing.length) throw new Error(`Faltan campos obligatorios: ${missing.join(', ')}.`);
+
+  return {
+    carrera,
+    semestre,
+    fecha,
+    horaInicio,
+    horaFin,
+    modalidad,
+    materiaId: resolveImportedId(materia, catalogs.materias, 'Materia', ['id', 'nombre', 'codigo']),
+    profesorId: resolveImportedId(profesor, catalogs.profesores, 'Docente', ['id', 'nombre']),
+    salonId: resolveImportedId(salon, catalogs.salones, 'Salón', ['id', 'nombre'])
+  };
+}
+
+function isScheduleImportRow(row) {
+  return ['programa', 'carrera', 'semestre', 'fecha', 'horainicio', 'inicio', 'horafin', 'fin',
+    'docente', 'profesor', 'profesorid', 'salon', 'salonid', 'aula', 'materia', 'materiaid', 'asignatura']
+    .some((key) => getImportedValue(row, key));
+}
+
+function renderImportResults(results) {
+  // Usa nodos de texto para que los valores del Excel no se interpreten como HTML.
+  document.getElementById('importRowResults')?.remove();
+  const list = document.createElement('ul');
+  list.id = 'importRowResults';
+  list.className = 'mt-2 space-y-1 text-xs';
+  results.forEach(({ rowNumber, ok, message }) => {
+    const item = document.createElement('li');
+    item.className = ok ? 'text-green-700' : 'text-rose-600';
+    item.textContent = `Fila ${rowNumber}: ${ok ? 'Éxito' : 'Error'} — ${message}`;
+    list.appendChild(item);
+  });
+  importStatus.insertAdjacentElement('afterend', list);
+  const imported = results.filter((result) => result.ok).length;
+  const failed = results.length - imported;
+  importStatus.textContent = `${imported} importados, ${failed} fallidos.`;
 }
 
 async function importExcelFile(event) {
@@ -350,30 +414,59 @@ async function importExcelFile(event) {
     const workbook = XLSX.read(buffer, { type: 'array' });
     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+    if (!rows.length) throw new Error('El archivo no tiene filas útiles para importar.');
 
-    if (!rows.length) {
-      throw new Error('El archivo no tiene filas �tiles para importar.');
-    }
-
+    const results = [];
     const members = mapImportedRowsToMembers(rows);
     if (members.length) {
-      const currentMembers = getStoredMembers();
-      saveStoredMembers([...currentMembers, ...members]);
+      const persistedMembers = members.map(({ rowNumber, ...member }) => member);
+      saveStoredMembers([...getStoredMembers(), ...persistedMembers]);
       renderMemberTable();
+      members.forEach((member) => results.push({ rowNumber: member.rowNumber, ok: true, message: 'Miembro guardado localmente.' }));
     }
 
-    const schedules = mapImportedRowsToSchedule(rows);
-    for (const schedule of schedules) {
-      await fetchJson(`${API_BASE_URL}/api/v1/admin/horarios`, {
-        method: 'POST',
-        headers: adminHeaders(),
-        body: JSON.stringify(schedule)
-      }).catch(() => null);
+    const scheduleEntries = rows
+      .map((row, index) => ({ row, rowNumber: index + 1 }))
+      .filter(({ row }) => isScheduleImportRow(row));
+    let importedSchedules = 0;
+    if (scheduleEntries.length) {
+      const [profesoresRes, materiasRes, salonesRes] = await Promise.all([
+        fetchJson(`${API_BASE_URL}/api/v1/profesores`),
+        fetchJson(`${API_BASE_URL}/api/v1/materias`),
+        fetchJson(`${API_BASE_URL}/api/v1/salones`)
+      ]);
+      const catalogs = {
+        profesores: profesoresRes.data || [],
+        materias: materiasRes.data || [],
+        salones: salonesRes.data || []
+      };
+
+      for (const { row, rowNumber } of scheduleEntries) {
+        try {
+          const schedule = mapImportedRowToSchedule(row, catalogs);
+          await fetchJson(`${API_BASE_URL}/api/v1/admin/horarios`, {
+            method: 'POST',
+            headers: adminHeaders(),
+            body: JSON.stringify(schedule)
+          });
+          importedSchedules += 1;
+          results.push({ rowNumber, ok: true, message: 'Horario importado.' });
+        } catch (error) {
+          results.push({ rowNumber, ok: false, message: error.message || 'No se pudo importar el horario.' });
+        }
+      }
     }
 
-    importStatus.textContent = `Importaci�n completada. ${members.length} miembros y ${schedules.length} horarios procesados.`;
-    await loadAdminEditor();
-    await loadData();
+    rows.forEach((row, index) => {
+      if (!isScheduleImportRow(row) && !members.some((member) => member.rowNumber === index + 1)) {
+        results.push({ rowNumber: index + 1, ok: false, message: 'La fila no contiene datos reconocibles de miembro ni de horario.' });
+      }
+    });
+    renderImportResults(results);
+    if (importedSchedules) {
+      await loadAdminEditor();
+      await loadData();
+    }
   } catch (error) {
     importStatus.textContent = error.message || 'No se pudo importar el archivo Excel.';
   } finally {

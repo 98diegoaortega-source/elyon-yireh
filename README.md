@@ -73,4 +73,4 @@ La app incluye profesores, materias, salones y horarios simulados listos para us
 
 El backend usa los arrays de `data.js` cuando no existe `DATABASE_URL`. Para conservar los cambios administrativos, configura `DATABASE_URL` con una base PostgreSQL o Supabase. Al iniciar por primera vez, el backend crea la tabla `academic_state` y carga los datos demo; las altas, ediciones y eliminaciones posteriores se guardan allí.
 
-Configura también `JWT_SECRET`, `ADMIN_USER`, `ADMIN_PASSWORD` y `CLIENT_ORIGIN` en `.env` o en las variables del proveedor de despliegue. `CLIENT_ORIGIN` acepta varios orígenes separados por comas.
+Configura `JWT_SECRET`, `ADMIN_USER`, `ADMIN_PASSWORD` y `CLIENT_ORIGIN` en `.env` o en las variables del proveedor de despliegue. `CLIENT_ORIGIN` acepta varios orígenes separados por comas. En producción, reemplaza los marcadores de `.env.example` por valores únicos: genera una contraseña y el secreto JWT con `openssl rand -base64 32`, y define un usuario administrativo no predecible. El backend no iniciará en producción si `ADMIN_USER` o `ADMIN_PASSWORD` conserva un valor predeterminado o el marcador del ejemplo.

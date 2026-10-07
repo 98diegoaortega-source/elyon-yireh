@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const { isDeepStrictEqual } = require('node:util');
 
 const pool = process.env.DATABASE_URL
   ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false })
@@ -34,11 +35,37 @@ async function loadState(state) {
 
 async function saveState(state) {
   if (!pool) return;
-  await pool.query(`INSERT INTO academic_state (id, profesores, materias, salones, estudiantes, horarios)
+  const client = await pool.connect();
+  let transactionStarted = false;
+  try {
+    await client.query('BEGIN');
+    transactionStarted = true;
+    await client.query(`INSERT INTO academic_state (id, profesores, materias, salones, estudiantes, horarios)
     VALUES (1, $1::jsonb, $2::jsonb, $3::jsonb, $4::jsonb, $5::jsonb)
     ON CONFLICT (id) DO UPDATE SET profesores = EXCLUDED.profesores, materias = EXCLUDED.materias,
       salones = EXCLUDED.salones, estudiantes = EXCLUDED.estudiantes, horarios = EXCLUDED.horarios, updated_at = now()`,
-  [state.profesores, state.materias, state.salones, state.estudiantes, state.horarios]);
+    [state.profesores, state.materias, state.salones, state.estudiantes, state.horarios]);
+
+    // Lee dentro de la transacción para confirmar exactamente el estado persistido.
+    const { rows } = await client.query('SELECT profesores, materias, salones, estudiantes, horarios FROM academic_state WHERE id = 1');
+    if (!rows[0] || !Object.keys(state).every((key) => isDeepStrictEqual(rows[0][key], state[key]))) {
+      throw new Error('La verificación posterior al guardado no coincide con el estado enviado.');
+    }
+
+    await client.query('COMMIT');
+    transactionStarted = false;
+  } catch (error) {
+    if (transactionStarted) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Falló el rollback de academic_state:', rollbackError.code || 'SIN_CODIGO', rollbackError.message);
+      }
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function trackAnalytics(tipo, valor, ip) {
