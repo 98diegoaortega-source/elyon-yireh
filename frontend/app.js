@@ -1,10 +1,10 @@
-const API_BASE_URL = 'https://elyon-yireh-production.up.railway.app';
+const API_BASE_URL = window.ELYON_API_BASE_URL;
 
 const state = {
   allSchedule: [],
   allTeachers: [],
   selectedView: 'tarjetas',
-  studentId: 'est-101',
+  studentId: 'est-001',
   members: []
 };
 
@@ -117,11 +117,11 @@ let searchDebounce;
 let isLoading = false;
 
 async function fetchJson(url, options = {}) {
+  let timeoutId;
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), options.signal ? 30000 : 30000);
+    timeoutId = setTimeout(() => controller.abort(), options.signal ? 30000 : 30000);
     const response = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(timeout);
     const contentType = response.headers.get('content-type') || '';
     const result = contentType.includes('application/json') ? await response.json() : null;
 
@@ -145,6 +145,8 @@ async function fetchJson(url, options = {}) {
       : 'No se pudo conectar con el servidor. Verifica tu conexi�n a internet.');
     friendlyError.cause = error;
     throw friendlyError;
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
   }
 }
 
@@ -202,26 +204,10 @@ function renderStatistics(data) {
 function getStoredMembers() {
   try {
     const values = JSON.parse(localStorage.getItem(MEMBER_STORAGE_KEY) || '[]');
-    if (!Array.isArray(values) || !values.length) {
-      return [{
-        id: 'member-admin',
-        nombre: 'Administrador',
-        rol: 'Coordinador',
-        email: 'admin@elyon.edu',
-        telefono: 'Sin asignar',
-        departamento: 'Academia'
-      }];
-    }
-    return values;
-  } catch {
-    return [{
-      id: 'member-admin',
-      nombre: 'Administrador',
-      rol: 'Coordinador',
-      email: 'admin@elyon.edu',
-      telefono: 'Sin asignar',
-      departamento: 'Academia'
-    }];
+    return Array.isArray(values) ? values : [];
+  } catch (error) {
+    console.warn('No se pudieron leer los miembros guardados:', error);
+    return [];
   }
 }
 
@@ -689,8 +675,19 @@ function getFilteredSchedule() {
   return lista;
 }
 
+// Escapa texto dinámico antes de insertarlo en el marcado HTML.
+function escapeHTML(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[character]);
+}
+
 function renderCards(items, agrupar = false) {
-  const query = searchInput.value.trim();
+  const query = escapeHTML(searchInput.value.trim());
 
   const tabs = `
     <div class="glass col-span-full mb-4 flex items-center gap-3 rounded-2xl p-4">
@@ -726,25 +723,27 @@ function renderCards(items, agrupar = false) {
     : [['', items]];
 
   const cardsMarkup = groups.map(([franja, groupItems]) => `
-    ${agrupar ? `<h3 class="franja-titulo col-span-full">${formatHora(groupItems[0].horaInicio)} - ${formatHora(groupItems[0].horaFin)} <span>(${groupItems.length} m�dulos)</span></h3>` : ''}
+    ${agrupar ? `<h3 class="franja-titulo col-span-full">${escapeHTML(formatHora(groupItems[0].horaInicio))} - ${escapeHTML(formatHora(groupItems[0].horaFin))} <span>(${groupItems.length} m�dulos)</span></h3>` : ''}
     ${groupItems
     .map((item) => {
-      const program = item.programa || item.carrera || item.materia?.programa || 'Sin programa';
+      const program = escapeHTML(item.programa || item.carrera || item.materia?.programa || 'Sin programa');
       const module = item.modulo || item.materia?.nombre || 'Sin m�dulo';
-      const teacher = item.docente || item.profesor?.nombre || 'Sin docente';
-      const classroom = item.aula || item.salon?.nombre || 'Sin asignar';
-      const teacherInitials = item.profesor?.foto || teacher.split(' ').map((part) => part[0]).join('').slice(0, 2);
+      const safeModule = escapeHTML(module);
+      const teacher = escapeHTML(item.docente || item.profesor?.nombre || 'Sin docente');
+      const classroom = escapeHTML(item.aula || item.salon?.nombre || 'Sin asignar');
+      const teacherInitials = escapeHTML(item.profesor?.foto || teacher.split(' ').map((part) => part[0]).join('').slice(0, 2));
+      const itemId = escapeHTML(item.id);
       return `
         <article class="glass result-card rounded-3xl p-5">
           <div class="mb-4 flex items-start justify-between gap-3">
-            <div class="card-actions"><button class="favorite-star ${isFavorite(item.id) ? 'is-favorite' : ''}" type="button" data-favorite="${item.id}" aria-label="${isFavorite(item.id) ? 'Quitar favorito' : 'Agregar favorito'}" aria-pressed="${isFavorite(item.id)}"><i class="${isFavorite(item.id) ? 'ph-fill ph-star' : 'ph ph-star'}" aria-hidden="true"></i></button></div>
+            <div class="card-actions"><button class="favorite-star ${isFavorite(item.id) ? 'is-favorite' : ''}" type="button" data-favorite="${itemId}" aria-label="${isFavorite(item.id) ? 'Quitar favorito' : 'Agregar favorito'}" aria-pressed="${isFavorite(item.id)}"><i class="${isFavorite(item.id) ? 'ph-fill ph-star' : 'ph ph-star'}" aria-hidden="true"></i></button></div>
           </div>
 
-          <p class="mb-2 text-sm text-slate-400">${program} � ${item.semestre || 'Semestre'}</p>
-          <h3 class="mb-4 text-xl font-semibold text-slate-900">${module}</h3>
+          <p class="mb-2 text-sm text-slate-400">${program} � ${escapeHTML(item.semestre || 'Semestre')}</p>
+          <h3 class="mb-4 text-xl font-semibold text-slate-900">${safeModule}</h3>
 
           <div class="mb-4 flex items-center gap-3">
-            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br ${item.profesor?.color || 'from-cyan-500 to-indigo-500'} text-sm font-bold text-white">
+            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br ${escapeHTML(item.profesor?.color || 'from-cyan-500 to-indigo-500')} text-sm font-bold text-white">
               ${teacherInitials}
             </div>
             <div>
@@ -759,7 +758,7 @@ function renderCards(items, agrupar = false) {
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">HORARIO</span>
-              <strong class="text-right text-slate-900">${item.horaInicio} - ${item.horaFin}</strong>
+              <strong class="text-right text-slate-900">${escapeHTML(item.horaInicio)} - ${escapeHTML(item.horaFin)}</strong>
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">PROGRAMA</span>
@@ -767,15 +766,15 @@ function renderCards(items, agrupar = false) {
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">SEMESTRE</span>
-              <strong class="text-right text-slate-900">${item.semestre || '�'}</strong>
+              <strong class="text-right text-slate-900">${escapeHTML(item.semestre || '')}</strong>
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">CORTE#4</span>
-              <strong class="text-right text-slate-900">${item.corte || '�'}</strong>
+              <strong class="text-right text-slate-900">${escapeHTML(item.corte || '')}</strong>
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">NOMBRE DE MODULO 4</span>
-              <strong class="text-right text-slate-900">${module}</strong>
+              <strong class="text-right text-slate-900">${safeModule}</strong>
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">DOCENTE</span>
@@ -783,7 +782,7 @@ function renderCards(items, agrupar = false) {
             </div>
           </div>
 
-          <button type="button" class="share-whatsapp mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-green-200 px-4 py-2.5 text-sm font-semibold text-green-700" data-share="${item.id}">
+          <button type="button" class="share-whatsapp mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-green-200 px-4 py-2.5 text-sm font-semibold text-green-700" data-share="${itemId}">
             <i class="ph ph-whatsapp-logo"></i> ${translations[currentLanguage].share}
           </button>
         </article>
@@ -958,9 +957,15 @@ function closeModalView() {
   modal.classList.remove('flex');
 }
 
-function openAdmin() {
+async function openAdmin() {
   adminPanel.classList.remove('hidden');
-  if (adminToken) loadAdminEditor();
+  if (adminToken) {
+    try {
+      await loadAdminEditor();
+    } catch (error) {
+      adminLoginMessage.textContent = error.message;
+    }
+  }
 }
 
 function adminHeaders() {
@@ -986,11 +991,12 @@ async function adminLoginRequest() {
 }
 
 async function loadAdminEditor() {
-  const [scheduleRes, teachersRes, roomsRes, subjectsRes] = await Promise.all([
+  const [scheduleRes, teachersRes, roomsRes, subjectsRes, studentsRes] = await Promise.all([
     fetchJson(`${API_BASE_URL}/api/v1/admin/horarios`, { headers: adminHeaders() }),
-    fetchJson(`${API_BASE_URL}/api/v1/profesores`),
-    fetchJson(`${API_BASE_URL}/api/v1/salones`),
-    fetchJson(`${API_BASE_URL}/api/v1/materias`)
+    fetchJson(`${API_BASE_URL}/api/v1/admin/profesores`, { headers: adminHeaders() }),
+    fetchJson(`${API_BASE_URL}/api/v1/admin/salones`, { headers: adminHeaders() }),
+    fetchJson(`${API_BASE_URL}/api/v1/admin/materias`, { headers: adminHeaders() }),
+    fetchJson(`${API_BASE_URL}/api/v1/admin/estudiantes`, { headers: adminHeaders() })
   ]);
 
   if (!scheduleRes.success) throw new Error(scheduleRes.message || 'No se pudo cargar el panel');
@@ -999,25 +1005,53 @@ async function loadAdminEditor() {
   state.members = getStoredMembers();
   renderAdminRows(scheduleRes.data, teachersRes.data, roomsRes.data, subjectsRes.data);
   renderMemberTable();
+  window.renderAdminEntities({
+    profesores: teachersRes.data || [],
+    salones: roomsRes.data || [],
+    materias: subjectsRes.data || [],
+    estudiantes: studentsRes.data || []
+  });
 }
 
 function renderAdminRows(schedule, teachers, rooms, subjects) {
   document.getElementById('newTeacher').value = '';
   document.getElementById('newRoom').value = '';
   document.getElementById('newSubject').value = '';
-  adminRows.innerHTML = schedule.map((item) => `
+  const normalizeCatalogValue = (value) => String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  const findCatalogId = (value, records) => {
+    if (!value) return '';
+    return records.find((record) =>
+      record.id === value || normalizeCatalogValue(record.nombre) === normalizeCatalogValue(value)
+    )?.id || '';
+  };
+  adminRows.innerHTML = schedule.map((item) => {
+    const roomName = item.aula || item.salon?.nombre || '';
+    const teacherName = item.docente || item.profesor?.nombre || '';
+    const roomId = findCatalogId(item.salonId, rooms) || findCatalogId(roomName, rooms);
+    const teacherId = findCatalogId(item.profesorId, teachers) || findCatalogId(teacherName, teachers);
+    return `
     <form class="admin-row grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-6" data-id="${item.id}">
-      <div class="md:col-span-2"><label class="field-label">Programa</label><input name="carrera" value="${item.carrera || ''}" class="field-input" /></div>
+      <div class="md:col-span-2"><label class="field-label">Programa</label><input name="carrera" value="${escapeHTML(item.carrera || item.programa || '')}" class="field-input" /></div>
       <div><label class="field-label">Semestre</label><input name="semestre" value="${item.semestre || ''}" class="field-input" /></div>
-      <div><label class="field-label">Salón</label><input name="salonId" value="${item.salonId || item.salon?.nombre || ''}" class="field-input" /></div>
-      <div class="md:col-span-2"><label class="field-label">Docente</label><input name="profesorId" value="${item.profesorId || item.profesor?.nombre || ''}" class="field-input" /></div>
+      <div><label class="field-label">Salón</label><select name="salonId" required class="field-input">
+        <option value="" disabled ${roomId ? '' : 'selected'}>${roomId ? 'Selecciona salón' : `Sin coincidencia: ${escapeHTML(roomName || 'salón')}`}</option>
+        ${rooms.map((room) => `<option value="${escapeHTML(room.id)}" ${room.id === roomId ? 'selected' : ''}>${escapeHTML(room.nombre)}</option>`).join('')}
+      </select></div>
+      <div class="md:col-span-2"><label class="field-label">Docente</label><select name="profesorId" required class="field-input">
+        <option value="" disabled ${teacherId ? '' : 'selected'}>${teacherId ? 'Selecciona docente' : `Sin coincidencia: ${escapeHTML(teacherName || 'docente')}`}</option>
+        ${teachers.map((teacher) => `<option value="${escapeHTML(teacher.id)}" ${teacher.id === teacherId ? 'selected' : ''}>${escapeHTML(teacher.nombre)}</option>`).join('')}
+      </select></div>
       <div><label class="field-label">Desde</label><input name="horaInicio" value="${item.horaInicio || ''}" class="field-input" /></div>
       <div><label class="field-label">Hasta</label><input name="horaFin" value="${item.horaFin || ''}" class="field-input" /></div>
       <div><label class="field-label">Modalidad</label><input name="modalidad" value="${item.modalidad || 'Presencial'}" class="field-input" /></div>
-      <div class="flex items-end gap-2"><button class="save-admin flex-1 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white">Guardar</button><button type="button" class="delete-admin rounded-xl border border-rose-200 px-3 py-2.5 text-sm font-semibold text-rose-600" title="Eliminar"><i class="ph ph-trash"></i></button></div>
+      <div class="flex items-end gap-2"><button class="save-admin flex-1 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white">Guardar</button><button type="button" class="delete-admin rounded-xl border border-rose-200 px-3 py-2.5 text-sm font-semibold text-rose-600" title="Eliminar" aria-label="Eliminar horario"><i class="ph ph-trash"></i></button></div>
       <p class="admin-status md:col-span-6 text-sm"></p>
     </form>
-  `).join('');
+  `;
+  }).join('');
 
   adminRows.querySelectorAll('.admin-row').forEach((form) => form.addEventListener('submit', saveAdminRow));
   adminRows.querySelectorAll('.delete-admin').forEach((button) => button.addEventListener('click', () => deleteAdminRow(button.closest('.admin-row'))));
@@ -1073,7 +1107,16 @@ adminTabButtons.forEach((button) => {
   button.addEventListener('click', () => {
     const target = button.dataset.adminTab;
     adminTabButtons.forEach((tab) => tab.classList.toggle('active', tab === button));
-    adminTabPanels.forEach((panel) => panel.classList.toggle('hidden', panel.id !== `${target === 'schedules' ? 'adminSchedulesTab' : target === 'members' ? 'adminMembersTab' : 'adminToolsTab'}`));
+    const panelId = {
+      schedules: 'adminSchedulesTab',
+      profesores: 'adminProfesoresTab',
+      salones: 'adminSalonesTab',
+      materias: 'adminMateriasTab',
+      estudiantes: 'adminEstudiantesTab',
+      members: 'adminMembersTab',
+      tools: 'adminToolsTab'
+    }[target] || 'adminToolsTab';
+    adminTabPanels.forEach((panel) => panel.classList.toggle('hidden', panel.id !== panelId));
   });
 });
 
