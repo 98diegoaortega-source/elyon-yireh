@@ -168,14 +168,14 @@
         <div class="mb-6 flex items-center justify-between">
           <div>
             <p class="text-[10px] uppercase tracking-[0.22em] text-slate-400">Panel protegido</p>
-            <h2 class="text-2xl font-bold text-slate-900">Administrar horarios y miembros</h2>
+            <h2 class="text-2xl font-bold text-slate-900">Administrar información académica</h2>
           </div>
-          <button id="closeAdmin" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700"><i class="ph ph-x"></i></button>
+          <button id="closeAdmin" aria-label="Cerrar panel de administración" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700"><i class="ph ph-x"></i></button>
         </div>
         <div id="adminLogin" class="mx-auto max-w-md rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <p class="mb-4 text-sm text-slate-500">Ingresa con tu usuario de administrador para editar la programación, añadir miembros y gestionar importación/exportación.</p>
+          <p class="mb-4 text-sm text-slate-500">Ingresa con tu usuario de administrador para gestionar horarios, docentes, salones, materias, estudiantes y miembros, además de importar o exportar datos.</p>
           <div class="space-y-3">
-            <input id="adminUsername" value="admin" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none" placeholder="Usuario" />
+            <input id="adminUsername" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none" placeholder="Usuario" />
             <input id="adminPassword" type="password" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none" placeholder="Contraseña" />
             <button id="adminLoginButton" class="w-full rounded-xl bg-blue-600 px-4 py-2.5 font-semibold text-white hover:bg-blue-700">Entrar</button>
             <p id="adminLoginMessage" class="text-sm text-rose-600"></p>
@@ -194,6 +194,10 @@
 
           <div class="mb-5 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
             <button type="button" class="admin-tab-btn active rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" data-admin-tab="schedules">Horarios</button>
+            <button type="button" class="admin-tab-btn rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" data-admin-tab="profesores">Docentes</button>
+            <button type="button" class="admin-tab-btn rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" data-admin-tab="salones">Salones</button>
+            <button type="button" class="admin-tab-btn rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" data-admin-tab="materias">Materias</button>
+            <button type="button" class="admin-tab-btn rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" data-admin-tab="estudiantes">Estudiantes</button>
             <button type="button" class="admin-tab-btn rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" data-admin-tab="members">Miembros</button>
             <button type="button" class="admin-tab-btn rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700" data-admin-tab="tools">Importar / Exportar</button>
           </div>
@@ -213,6 +217,58 @@
               <p id="createScheduleMessage" class="text-sm md:col-span-6"></p>
             </form>
             <div id="adminRows" class="space-y-3"></div>
+          </div>
+
+          <div id="adminProfesoresTab" class="admin-tab-panel hidden" data-entity-panel="profesores">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <h3 class="text-lg font-semibold text-slate-900">Docentes</h3>
+              <div class="flex gap-2">
+                <button type="button" data-entity-export="profesores" aria-label="Exportar docentes a CSV" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">📤 CSV</button>
+                <button type="button" data-entity-create="profesores" aria-label="Crear docente" class="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white">➕ Nuevo</button>
+              </div>
+            </div>
+            <input type="search" class="field-input mb-3 w-full" data-entity-search="profesores" aria-label="Buscar docentes" placeholder="Buscar por nombre, email o departamento" />
+            <div data-entity-table="profesores" aria-live="polite" class="overflow-x-auto"></div>
+            <nav data-entity-pagination="profesores" aria-label="Paginación de docentes" class="mt-3 flex justify-end gap-2"></nav>
+          </div>
+
+          <div id="adminSalonesTab" class="admin-tab-panel hidden" data-entity-panel="salones">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <h3 class="text-lg font-semibold text-slate-900">Salones</h3>
+              <div class="flex gap-2">
+                <button type="button" data-entity-export="salones" aria-label="Exportar salones a CSV" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">📤 CSV</button>
+                <button type="button" data-entity-create="salones" aria-label="Crear salón" class="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white">➕ Nuevo</button>
+              </div>
+            </div>
+            <input type="search" class="field-input mb-3 w-full" data-entity-search="salones" aria-label="Buscar salones" placeholder="Buscar por nombre o ubicación" />
+            <div data-entity-table="salones" aria-live="polite" class="overflow-x-auto"></div>
+            <nav data-entity-pagination="salones" aria-label="Paginación de salones" class="mt-3 flex justify-end gap-2"></nav>
+          </div>
+
+          <div id="adminMateriasTab" class="admin-tab-panel hidden" data-entity-panel="materias">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <h3 class="text-lg font-semibold text-slate-900">Materias</h3>
+              <div class="flex gap-2">
+                <button type="button" data-entity-export="materias" aria-label="Exportar materias a CSV" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">📤 CSV</button>
+                <button type="button" data-entity-create="materias" aria-label="Crear materia" class="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white">➕ Nuevo</button>
+              </div>
+            </div>
+            <input type="search" class="field-input mb-3 w-full" data-entity-search="materias" aria-label="Buscar materias" placeholder="Buscar por nombre, código o programa" />
+            <div data-entity-table="materias" aria-live="polite" class="overflow-x-auto"></div>
+            <nav data-entity-pagination="materias" aria-label="Paginación de materias" class="mt-3 flex justify-end gap-2"></nav>
+          </div>
+
+          <div id="adminEstudiantesTab" class="admin-tab-panel hidden" data-entity-panel="estudiantes">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <h3 class="text-lg font-semibold text-slate-900">Estudiantes</h3>
+              <div class="flex gap-2">
+                <button type="button" data-entity-export="estudiantes" aria-label="Exportar estudiantes a CSV" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">📤 CSV</button>
+                <button type="button" data-entity-create="estudiantes" aria-label="Crear estudiante" class="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white">➕ Nuevo</button>
+              </div>
+            </div>
+            <input type="search" class="field-input mb-3 w-full" data-entity-search="estudiantes" aria-label="Buscar estudiantes" placeholder="Buscar por nombre, cédula o programa" />
+            <div data-entity-table="estudiantes" aria-live="polite" class="overflow-x-auto"></div>
+            <nav data-entity-pagination="estudiantes" aria-label="Paginación de estudiantes" class="mt-3 flex justify-end gap-2"></nav>
           </div>
 
           <div id="adminMembersTab" class="admin-tab-panel hidden">
@@ -256,6 +312,7 @@
           </div>
         </div>
       </div>
+      <div id="adminToast" class="fixed bottom-4 right-4 z-[60] hidden rounded-xl px-4 py-3 text-sm font-semibold shadow-lg" role="status" aria-live="polite"></div>
     </section>
 
     <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
@@ -265,7 +322,7 @@
             <p class="text-[10px] uppercase tracking-[0.22em] text-slate-400">Detalle</p>
             <h3 id="modalTitle" class="text-xl font-semibold text-slate-900">Detalle de la clase</h3>
           </div>
-          <button id="closeModal" class="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-700 hover:border-slate-500">
+          <button id="closeModal" aria-label="Cerrar detalle del horario" class="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-700 hover:border-slate-500">
             <i class="ph ph-x"></i>
           </button>
         </div>
@@ -301,7 +358,9 @@
       <form id="chatForm" class="chat-form"><input id="chatInput" maxlength="160" placeholder="¿A qué hora enseña...?" autocomplete="off" /><button type="submit" aria-label="Enviar pregunta"><i class="ph ph-paper-plane-tilt"></i></button></form>
     </aside>
 
-    <script src="./app.js?v=5"></script>
+    <script src="./api-config.js?v=1"></script>
+    <script src="./app.js?v=7"></script>
+    <script src="./admin-entities.js?v=1"></script>
     <script>
       function forceFrontendUpdate() {
         if ('serviceWorker' in navigator) {
@@ -324,7 +383,7 @@
 
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js?v=5').catch((error) => {
+          navigator.serviceWorker.register('/service-worker.js?v=7').catch((error) => {
             console.error('No se pudo registrar el Service Worker:', error);
           });
         });

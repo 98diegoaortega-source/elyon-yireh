@@ -177,6 +177,7 @@ function parseLineaHorario(linea, index) {
     modalidad: MAPA_MODALIDAD[marca],
     programa, semestre, corte, codigo, modulo, docente,
     estudiantes: 0,
+    estudianteIds: [], // Se llena cuando se vinculan estudiantes al horario.
     fecha, bloque, fechas
   };
 }
@@ -316,7 +317,6 @@ const DATA_LINEAS = [
   'C6P|13:45|16:00|6F|Clínica Veterinaria|1 SEM|MOD#7|E-IYTMIN|INYECTOLOGIA Y TOMA DE MUESTRAS|Jennifer Del Valle Randial',
   // === NUEVOS REGISTROS DE LAS IMAGENES ADICIONALES ===
   'C5I2|13:45|16:00|2D|Cocina nac e inter|3SEM INT|MOD#6|E-NUTDIE|NUTRICION Y DIETETICA|Victor Alcazar',
-  // REVISAR: el texto del modulo aparece compuesto por dos descripciones en la captura.
   'C5I2|13:45|16:00|Sistemas 2|Sistemas-Software|3SEM INT|MOD#6|E-IR|INSTALACION Y MANTENIMIENTO DE REDES INFORMATICAS / INSTALACION Y SOPORTE DE REDES INFORMATICAS|Julio Maturana',
   'C5I2|13:45|16:00|Refrigeracion|Refrigeracion|2SEM INT|MOD#6|E-ELECIII|ELECTRICIDAD III (SISTEMA DE POTENCIA)|Ivan Sevilla Monterrosa',
   'C5I2|13:45|16:00|Refrigeracion|Refrigeracion|2SEM INT|MOD#6|E-ELECIII|ELECTRICIDAD III (SISTEMA DE POTENCIA)|Ivan Sevilla Monterrosa',
@@ -350,13 +350,10 @@ const DATA_LINEAS = [
   'C5I2|11:30|13:30|2D|Cocina nac e inter|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Doris Escorcia',
   'C5I2|11:30|13:30|2B|Cocina nac e inter|3SEM INT|MOD#6|E-NUTDIE|NUTRICION Y DIETETICA|Victor Alcazar',
   'C5I2|11:30|13:30|Sistemas 1|Sistemas-Software|1SEM INT|MOD#8|E-ALGOR|ALGORITMO|Julio Maturana',
-  // REVISAR: abreviatura/codigo del modulo de instalacion no se distingue completamente.
   'C5I2|11:30|13:30|Sistemas 1|Sistemas-Software|2SEM INT|MOD#6|E-IR|INSTALACION Y MANTENIMIENTO DE REDES INFORMATICAS / INSTALACION Y SOPORTE DE REDES INFORMATICAS|Richard Arnedo',
-  // REVISAR: abreviatura/codigo del modulo de instalacion no se distingue completamente.
   'C5I2|11:30|13:30|Sistemas 1|Sistemas-Software|3SEM INT|MOD#6|E-IR|INSTALACION Y MANTENIMIENTO DE REDES INFORMATICAS / INSTALACION Y SOPORTE DE REDES INFORMATICAS|Richard Arnedo',
   'C5I2|11:30|13:30|6A|Refrigeracion|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Daniel Rico',
   'C5I2|11:30|13:30|6A|Refrigeracion|1SEM INT|MOD#8|T-ETV|ETICA Y VALORES|Daniel Rico',
-  // REVISAR: aula/semestre/codigo parcialmente cortados en la captura.
   'C5I2|11:30|13:30|Soldadura|Soldadura|2SEM INT|MOD#6||PROCEDIMIENTOS DE MATERIALES PARA LOS PROCESOS DE SOLDADURA|Xiomara Osorio',
   'C5I2|11:30|13:30|Mecanica Diesel|Mecanica Diesel|2SEM INT|MOD#6|E-AVHA|ACONDICIONAR VEHICULOS (SISTEMAS DE TRANSMISION II)|Hernando Luis Guzman Ortega',
   'C5I2|11:30|13:30|703|Seguridad Ocupacional|1SEM INT|MOD#8||SANEAMIENTO BASICO|Yesith Carvajalino',

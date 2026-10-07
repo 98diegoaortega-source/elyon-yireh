@@ -206,8 +206,12 @@ function requireAdmin(req, res, next) {
 }
 
 function hydrateSchedule(item) {
+  const estudianteIds = [...new Set(Array.isArray(item.estudianteIds) ? item.estudianteIds : [])]
+    .filter((id) => estudiantes.some((student) => student.id === id));
   return {
     ...item,
+    estudianteIds,
+    estudiantes: estudianteIds.length,
     materia: getMateriaById(item.materiaId),
     profesor: getProfesorById(item.profesorId),
     salon: getSalonById(item.salonId)
@@ -517,7 +521,7 @@ app.post('/api/v1/admin/horarios', requireAdmin, async (req, res, next) => {
     corte: 'MOD#5',
     carrera,
     semestre,
-    estudianteIds: ['real-student']
+    estudianteIds: []
   };
 
   horarios.push(schedule);
@@ -540,6 +544,16 @@ app.patch('/api/v1/admin/horarios/:id', requireAdmin, async (req, res, next) => 
 
   const previousSchedule = { ...schedule };
   const updates = req.body || {};
+  if (Object.prototype.hasOwnProperty.call(updates, 'estudianteIds')) {
+    if (!Array.isArray(updates.estudianteIds) || updates.estudianteIds.some((id) => typeof id !== 'string')) {
+      return res.status(400).json({ success: false, message: 'La lista de alumnos no es válida.' });
+    }
+    const uniqueStudentIds = [...new Set(updates.estudianteIds)];
+    if (uniqueStudentIds.some((id) => !estudiantes.some((student) => student.id === id))) {
+      return res.status(400).json({ success: false, message: 'Uno o más alumnos seleccionados no existen.' });
+    }
+    updates.estudianteIds = uniqueStudentIds;
+  }
   const referenceFields = [
     ['materiaId', getMateriaById, 'Materia'],
     ['profesorId', getProfesorById, 'Docente'],
@@ -550,7 +564,7 @@ app.patch('/api/v1/admin/horarios/:id', requireAdmin, async (req, res, next) => 
       return res.status(400).json({ success: false, message: `${label} no válido` });
     }
   }
-  const allowedFields = ['horaInicio', 'horaFin', 'fecha', 'modalidad', 'semestre', 'carrera', 'materiaId', 'profesorId', 'salonId'];
+  const allowedFields = ['horaInicio', 'horaFin', 'fecha', 'modalidad', 'semestre', 'carrera', 'materiaId', 'profesorId', 'salonId', 'estudianteIds'];
   allowedFields.forEach((field) => {
     if (Object.prototype.hasOwnProperty.call(updates, field)) schedule[field] = updates[field];
   });
@@ -631,18 +645,7 @@ app.get('/api/v1/horarios', scheduleCacheMiddleware, (req, res) => {
     filtered = filtered.filter((item) => normalizeText(getMateriaById(item.materiaId)?.nombre || '') === normalizeText(materia));
   }
 
-  const response = filtered.map((item) => {
-    const materiaInfo = getMateriaById(item.materiaId);
-    const profesorInfo = getProfesorById(item.profesorId);
-    const salonInfo = getSalonById(item.salonId);
-
-    return {
-      ...item,
-      materia: materiaInfo,
-      profesor: profesorInfo,
-      salon: salonInfo
-    };
-  });
+  const response = filtered.map(hydrateSchedule);
 
   return res.json({ success: true, ok: true, data: response });
 });
@@ -652,12 +655,12 @@ app.get('/api/v1/horarios-corte6', (req, res) => {
     if (String(req.query.expandir || '') === '1') {
       const data = horariosCorte6.flatMap((horario) => horario.fechas.map(({ fecha, dia }) => {
         const { fechas, ...resto } = horario;
-        return { ...resto, fecha, dia };
+        return hydrateSchedule({ ...resto, fecha, dia });
       }));
       return res.json({ success: true, ok: true, data });
     }
 
-    return res.json({ success: true, ok: true, data: horariosCorte6 });
+    return res.json({ success: true, ok: true, data: horariosCorte6.map(hydrateSchedule) });
   } catch (error) {
     return res.status(500).json({ success: false, ok: false, error: error.message });
   }
@@ -699,12 +702,7 @@ app.get('/api/v1/buscar', (req, res) => {
 
       if (!hayCoincidencia) return null;
 
-      return {
-        ...item,
-        materia: materiaInfo,
-        profesor: profesorInfo,
-        salon: salonInfo
-      };
+      return hydrateSchedule(item);
     })
     .filter(Boolean);
 
@@ -719,7 +717,7 @@ app.get('/api/v1/estudiante/:id/horario', (req, res) => {
   }
 
   const horarioPersonal = horarios
-    .filter((item) => item.estudianteIds.includes(estudiante.id))
+    .filter((item) => Array.isArray(item.estudianteIds) && item.estudianteIds.includes(estudiante.id))
     .map((item) => {
       const materiaInfo = getMateriaById(item.materiaId);
       const profesorInfo = getProfesorById(item.profesorId);

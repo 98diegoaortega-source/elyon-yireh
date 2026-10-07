@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#087443" />
     <title>ELYON YIREH | Dashboard</title>
     <link rel="stylesheet" href="./styles.css?v=3" />
+    <script src="./api-config.js?v=1"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   </head>
   <body class="admin-dashboard">
@@ -29,26 +30,53 @@
       <p id="dashboardStatus" class="statistics-line">Cargando datos...</p>
     </main>
     <script>
-      const API_BASE_URL = 'https://elyon-yireh-production.up.railway.app';
+      const API_BASE_URL = window.ELYON_API_BASE_URL;
       const palette = ['#087443', '#2167e8', '#d97706', '#be123c', '#0891b2', '#7c3aed', '#65a30d', '#0f766e'];
       const status = document.getElementById('dashboardStatus');
       function createChart(id, config) { return new Chart(document.getElementById(id), config); }
+      function readJsonResponse(response) {
+        return response.json().then((data) => {
+          if (!response.ok) throw new Error(data?.message || data?.error || `Error HTTP ${response.status}`);
+          return data;
+        });
+      }
       fetch(`${API_BASE_URL}/api/v1/estadisticas-graficos`)
-        .then((response) => response.json())
+        .then(readJsonResponse)
         .then((data) => {
           createChart('programChart', { type: 'bar', data: { labels: data.profesoresPorPrograma.map((item) => item.programa), datasets: [{ label: 'Profesores', data: data.profesoresPorPrograma.map((item) => item.cantidad), backgroundColor: palette }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
           createChart('dayChart', { type: 'doughnut', data: { labels: data.horariosPorDia.map((item) => item.dia), datasets: [{ data: data.horariosPorDia.map((item) => item.cantidad), backgroundColor: palette }] }, options: { responsive: true } });
           createChart('teacherChart', { type: 'line', data: { labels: data.cargaPorDocente.map((item) => item.docente), datasets: [{ label: 'Horas', data: data.cargaPorDocente.map((item) => item.horas), borderColor: '#087443', backgroundColor: 'rgba(8,116,67,.14)', fill: true, tension: 0.3 }] }, options: { responsive: true, scales: { y: { beginAtZero: true } } } });
           status.textContent = 'Datos actualizados desde el backend.';
         })
-        .catch(() => { status.textContent = 'No se pudieron cargar los gráficos.'; });
+        .catch((error) => {
+          status.textContent = `No se pudieron cargar los gráficos: ${error.message}`;
+        });
       Promise.all([
-        fetch(`${API_BASE_URL}/api/v1/analytics/top-10`).then((response) => response.json()),
-        fetch(`${API_BASE_URL}/api/v1/analytics/total-hoy`).then((response) => response.json())
+        fetch(`${API_BASE_URL}/api/v1/analytics/top-10`).then(readJsonResponse),
+        fetch(`${API_BASE_URL}/api/v1/analytics/total-hoy`).then(readJsonResponse)
       ]).then(([top, total]) => {
-        document.getElementById('topSearches').innerHTML = (top.data || []).map((item) => `<li><span>${item.valor}</span><strong>${item.total}</strong></li>`).join('') || '<li>Sin búsquedas registradas</li>';
+        const topSearches = document.getElementById('topSearches');
+        topSearches.replaceChildren();
+        if (top.data?.length) {
+          top.data.forEach((item) => {
+            // Inserta los datos como texto para que no se interpreten como HTML.
+            const row = document.createElement('li');
+            const value = document.createElement('span');
+            const total = document.createElement('strong');
+            value.textContent = item.valor ?? '';
+            total.textContent = String(item.total ?? 0);
+            row.append(value, total);
+            topSearches.append(row);
+          });
+        } else {
+          const emptyRow = document.createElement('li');
+          emptyRow.textContent = 'Sin búsquedas registradas';
+          topSearches.append(emptyRow);
+        }
         document.getElementById('todaySearches').textContent = total.total || 0;
-      }).catch(() => {});
+      }).catch((error) => {
+        status.textContent = `No se pudieron cargar las búsquedas: ${error.message}`;
+      });
     </script>
   </body>
 </html>

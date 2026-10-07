@@ -731,6 +731,7 @@ function renderCards(items, agrupar = false) {
       const safeModule = escapeHTML(module);
       const teacher = escapeHTML(item.docente || item.profesor?.nombre || 'Sin docente');
       const classroom = escapeHTML(item.aula || item.salon?.nombre || 'Sin asignar');
+      const studentCount = Array.isArray(item.estudianteIds) ? item.estudianteIds.length : Number(item.estudiantes) || 0;
       const teacherInitials = escapeHTML(item.profesor?.foto || teacher.split(' ').map((part) => part[0]).join('').slice(0, 2));
       const itemId = escapeHTML(item.id);
       return `
@@ -767,6 +768,10 @@ function renderCards(items, agrupar = false) {
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">SEMESTRE</span>
               <strong class="text-right text-slate-900">${escapeHTML(item.semestre || '')}</strong>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-400">ALUMNOS</span>
+              <strong class="text-right text-slate-900">${studentCount}</strong>
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-slate-400">CORTE#4</span>
@@ -1003,7 +1008,7 @@ async function loadAdminEditor() {
   adminLogin.classList.add('hidden');
   adminEditor.classList.remove('hidden');
   state.members = getStoredMembers();
-  renderAdminRows(scheduleRes.data, teachersRes.data, roomsRes.data, subjectsRes.data);
+  renderAdminRows(scheduleRes.data, teachersRes.data, roomsRes.data, subjectsRes.data, studentsRes.data || []);
   renderMemberTable();
   window.renderAdminEntities({
     profesores: teachersRes.data || [],
@@ -1013,7 +1018,7 @@ async function loadAdminEditor() {
   });
 }
 
-function renderAdminRows(schedule, teachers, rooms, subjects) {
+function renderAdminRows(schedule, teachers, rooms, subjects, students) {
   document.getElementById('newTeacher').value = '';
   document.getElementById('newRoom').value = '';
   document.getElementById('newSubject').value = '';
@@ -1032,6 +1037,12 @@ function renderAdminRows(schedule, teachers, rooms, subjects) {
     const teacherName = item.docente || item.profesor?.nombre || '';
     const roomId = findCatalogId(item.salonId, rooms) || findCatalogId(roomName, rooms);
     const teacherId = findCatalogId(item.profesorId, teachers) || findCatalogId(teacherName, teachers);
+    const studentIds = Array.isArray(item.estudianteIds) ? item.estudianteIds : [];
+    const studentOptions = students.map((student) => {
+      const details = [student.carrera || student.programa, student.semestre].filter(Boolean).join(' · ');
+      const label = [student.nombre || student.id, details].filter(Boolean).join(' — ');
+      return `<option value="${escapeHTML(student.id)}" ${studentIds.includes(student.id) ? 'selected' : ''}>${escapeHTML(label)}</option>`;
+    }).join('');
     return `
     <form class="admin-row grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-6" data-id="${item.id}">
       <div class="md:col-span-2"><label class="field-label">Programa</label><input name="carrera" value="${escapeHTML(item.carrera || item.programa || '')}" class="field-input" /></div>
@@ -1047,6 +1058,7 @@ function renderAdminRows(schedule, teachers, rooms, subjects) {
       <div><label class="field-label">Desde</label><input name="horaInicio" value="${item.horaInicio || ''}" class="field-input" /></div>
       <div><label class="field-label">Hasta</label><input name="horaFin" value="${item.horaFin || ''}" class="field-input" /></div>
       <div><label class="field-label">Modalidad</label><input name="modalidad" value="${item.modalidad || 'Presencial'}" class="field-input" /></div>
+      <div class="md:col-span-3"><label class="field-label">Alumnos vinculados (${studentIds.length})</label><select name="estudianteIds" multiple size="3" aria-label="Alumnos vinculados al horario" class="field-input">${studentOptions}</select><p class="mt-1 text-xs text-slate-500">Usa Ctrl o Cmd para seleccionar varios alumnos.</p></div>
       <div class="flex items-end gap-2"><button class="save-admin flex-1 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white">Guardar</button><button type="button" class="delete-admin rounded-xl border border-rose-200 px-3 py-2.5 text-sm font-semibold text-rose-600" title="Eliminar" aria-label="Eliminar horario"><i class="ph ph-trash"></i></button></div>
       <p class="admin-status md:col-span-6 text-sm"></p>
     </form>
@@ -1061,11 +1073,15 @@ async function saveAdminRow(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const payload = Object.fromEntries(new FormData(form).entries());
+  payload.estudianteIds = new FormData(form).getAll('estudianteIds');
   const status = form.querySelector('.admin-status');
   const result = await fetchJson(`${API_BASE_URL}/api/v1/admin/horarios/${form.dataset.id}`, { method: 'PATCH', headers: adminHeaders(), body: JSON.stringify(payload) });
   status.textContent = result.success ? 'Cambios guardados' : result.message;
   status.className = `admin-status md:col-span-6 text-sm ${result.success ? 'text-emerald-600' : 'text-rose-600'}`;
-  if (result.success) loadData();
+  if (result.success) {
+    await loadAdminEditor();
+    await loadData();
+  }
 }
 
 async function deleteAdminRow(form) {

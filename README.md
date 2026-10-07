@@ -61,6 +61,20 @@ http://localhost:4000
 
 El endpoint de estadísticas devuelve los totales actuales de profesores, horarios, programas y materias. El endpoint de programas devuelve un array ordenado de programas únicos.
 
+### Administración de entidades
+
+Todas estas rutas requieren `Authorization: Bearer <token>` obtenido con el inicio de sesión administrativo.
+
+| Entidad | Operaciones |
+|---|---|
+| Docentes | `GET` y `POST /api/v1/admin/profesores`; `PATCH` y `DELETE /api/v1/admin/profesores/:id` |
+| Salones | `GET` y `POST /api/v1/admin/salones`; `PATCH` y `DELETE /api/v1/admin/salones/:id` |
+| Materias | `GET` y `POST /api/v1/admin/materias`; `PATCH` y `DELETE /api/v1/admin/materias/:id` |
+| Estudiantes | `GET` y `POST /api/v1/admin/estudiantes`; `PATCH` y `DELETE /api/v1/admin/estudiantes/:id` |
+
+Las altas, ediciones y eliminaciones se guardan en PostgreSQL cuando está configurado. La eliminación de un docente, salón o materia asociado a horarios responde `409` e identifica los horarios vinculados. Al eliminar un estudiante, se quitan también sus vínculos de los horarios.
+En salones, el campo `ubicacion` se mantiene compatible con el campo existente `edificio`; en estudiantes, `programa` se mantiene compatible con `carrera`.
+
 ## Depuración
 
 En VS Code presiona F5 y usa la configuración de launch creada en `.vscode/launch.json`.

@@ -1,8 +1,10 @@
-const CACHE_NAME = 'elyon-yireh-v5';
+const CACHE_NAME = 'elyon-yireh-v7';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/app.js',
+  '/api-config.js',
+  '/admin-entities.js',
   '/styles.css',
   '/assets/elyon-yireh.png',
   '/icons/icon-192x192.png',
