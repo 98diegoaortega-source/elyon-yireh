@@ -1,8 +1,11 @@
 const { Pool } = require('pg');
 const { isDeepStrictEqual } = require('node:util');
 
-const pool = process.env.DATABASE_URL
-  ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false })
+// Prioriza el nombre estándar y admite el nombre configurado actualmente en Railway.
+const DATABASE_URL = process.env.DATABASE_URL || process.env['URL_DE_LA_BASE_DE_DATOS'];
+
+const pool = DATABASE_URL
+  ? new Pool({ connectionString: DATABASE_URL, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false })
   : null;
 
 async function loadState(state) {

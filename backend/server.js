@@ -13,13 +13,17 @@ const { loadState, saveState, trackAnalytics, getTopAnalytics, getTotalAnalytics
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin2026';
+const ADMIN_USER = process.env.ADMIN_USER || process.env['USUARIO ADMINISTRADOR'] || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env['CONTRASEÑA_DE_ADMINISTRADOR'] || 'admin2026';
 // Evita iniciar en producción con las credenciales predeterminadas o marcadores de ejemplo.
 if (process.env.NODE_ENV === 'production') {
-  const unsafeAdminValues = new Set(['admin', 'admin2026', 'CAMBIAR_EN_PRODUCCION']);
+  const unsafeAdminValues = new Set(['admin', 'CAMBIAR_EN_PRODUCCION']);
   if (unsafeAdminValues.has(ADMIN_USER) || unsafeAdminValues.has(ADMIN_PASSWORD)) {
     throw new Error('Configura ADMIN_USER y ADMIN_PASSWORD con valores seguros antes de iniciar en producción.');
+  }
+  // Advierte sobre la contraseña débil sin impedir el arranque solicitado.
+  if (ADMIN_PASSWORD === 'admin2026') {
+    console.warn('ADVERTENCIA: contraseña admin débil detectada. Considera cambiarla.');
   }
 }
 const JWT_SECRET = process.env.JWT_SECRET || 'development-only-change-me';
@@ -230,6 +234,152 @@ async function persistAdminChange(res, state, rollback) {
   }
 }
 
+function nextAdminEntityId(prefix, collection) {
+  const highest = collection.reduce((current, item) => {
+    const match = String(item.id || '').match(new RegExp(`^${prefix}-(\\d+)$`));
+    return Math.max(current, Number(match?.[1] || 0));
+  }, 0);
+  return `${prefix}-${String(highest + 1).padStart(3, '0')}`;
+}
+
+function normalizeAdminEntity(body, fields) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+  const result = {};
+  for (const field of fields) {
+    if (!Object.prototype.hasOwnProperty.call(body, field)) continue;
+    const value = body[field];
+    if (field === 'capacidad') {
+      result[field] = value === '' || value == null ? null : Number(value);
+    } else if (typeof value === 'string') {
+      result[field] = value.trim();
+    } else {
+      return null;
+    }
+  }
+  return result;
+}
+
+function registerAdminEntityRoutes(config) {
+  const route = `/api/v1/admin/${config.path}`;
+  const state = { profesores, materias, salones, estudiantes, horarios };
+  const hasField = (object, field) => Object.prototype.hasOwnProperty.call(object, field);
+  const serialize = (entity) => {
+    const result = { ...entity };
+    for (const [field, storageField] of Object.entries(config.aliases || {})) {
+      result[field] = entity[field] ?? entity[storageField] ?? '';
+    }
+    return result;
+  };
+  const syncAliases = (entity, updates) => {
+    for (const [field, storageField] of Object.entries(config.aliases || {})) {
+      if (hasField(updates, field)) entity[storageField] = entity[field];
+    }
+  };
+  const validate = (entity, updates, creating = false) => {
+    for (const field of config.requiredFields) {
+      if ((creating || hasField(updates, field)) && !entity[field]) {
+        return `${config.label}: ${field} es obligatorio.`;
+      }
+    }
+    if (entity.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(entity.email)) {
+      return 'El correo electrónico no es válido.';
+    }
+    if (entity.capacidad != null && (!Number.isInteger(entity.capacidad) || entity.capacidad < 1)) {
+      return 'La capacidad debe ser un número entero mayor que cero.';
+    }
+    return null;
+  };
+
+  app.get(route, requireAdmin, (req, res) => {
+    return res.json({ success: true, data: config.collection.map(serialize) });
+  });
+
+  app.post(route, requireAdmin, async (req, res) => {
+    const updates = normalizeAdminEntity(req.body, config.fields);
+    if (!updates) return res.status(400).json({ success: false, message: 'Envía datos válidos para el registro.' });
+    const entity = { ...updates, id: nextAdminEntityId(config.prefix, config.collection) };
+    const validationError = validate(entity, updates, true);
+    if (validationError) return res.status(400).json({ success: false, message: validationError });
+    syncAliases(entity, updates);
+    config.collection.push(entity);
+    const saveFailure = await persistAdminChange(res, state, () => {
+      config.collection.splice(config.collection.indexOf(entity), 1);
+    });
+    if (saveFailure) return saveFailure;
+    return res.status(201).json({ success: true, data: serialize(entity) });
+  });
+
+  app.patch(`${route}/:id`, requireAdmin, async (req, res) => {
+    const entity = config.collection.find((item) => item.id === req.params.id);
+    if (!entity) return res.status(404).json({ success: false, message: `${config.label} no encontrado.` });
+    const updates = normalizeAdminEntity(req.body, config.fields);
+    if (!updates || !Object.keys(updates).length) {
+      return res.status(400).json({ success: false, message: 'Envía al menos un campo válido para actualizar.' });
+    }
+    const validationError = validate({ ...entity, ...updates }, updates);
+    if (validationError) return res.status(400).json({ success: false, message: validationError });
+    const previous = { ...entity };
+    Object.assign(entity, updates);
+    syncAliases(entity, updates);
+    const saveFailure = await persistAdminChange(res, state, () => Object.assign(entity, previous));
+    if (saveFailure) return saveFailure;
+    return res.json({ success: true, data: serialize(entity) });
+  });
+
+  app.delete(`${route}/:id`, requireAdmin, async (req, res) => {
+    const index = config.collection.findIndex((item) => item.id === req.params.id);
+    if (index === -1) return res.status(404).json({ success: false, message: `${config.label} no encontrado.` });
+    const [entity] = config.collection.splice(index, 1);
+    const linkedSchedules = config.scheduleField
+      ? horarios.filter((item) => item[config.scheduleField] === entity.id)
+      : [];
+    if (linkedSchedules.length) {
+      config.collection.splice(index, 0, entity);
+      return res.status(409).json({
+        success: false,
+        message: `No se puede eliminar: está asociado a estos horarios: ${linkedSchedules.map((item) => item.id).join(', ')}.`
+      });
+    }
+    const previousStudentLinks = config.path === 'estudiantes'
+      ? horarios.filter((item) => Array.isArray(item.estudianteIds) && item.estudianteIds.includes(entity.id))
+        .map((item) => ({ item, estudianteIds: item.estudianteIds }))
+      : [];
+    previousStudentLinks.forEach(({ item, estudianteIds }) => {
+      item.estudianteIds = estudianteIds.filter((id) => id !== entity.id);
+    });
+    if (previousStudentLinks.length) touchScheduleUpdate();
+    const saveFailure = await persistAdminChange(res, state, () => {
+      config.collection.splice(index, 0, entity);
+      previousStudentLinks.forEach(({ item, estudianteIds }) => { item.estudianteIds = estudianteIds; });
+      if (previousStudentLinks.length) touchScheduleUpdate();
+    });
+    if (saveFailure) return saveFailure;
+    return res.json({ success: true, message: `${config.label} eliminado correctamente.` });
+  });
+}
+
+registerAdminEntityRoutes({
+  path: 'profesores', prefix: 'prof', label: 'Docente', collection: profesores,
+  fields: ['nombre', 'email', 'telefono', 'departamento', 'oficina', 'horarioAtencion'],
+  requiredFields: ['nombre'], scheduleField: 'profesorId'
+});
+registerAdminEntityRoutes({
+  path: 'salones', prefix: 'salon', label: 'Salón', collection: salones,
+  fields: ['nombre', 'capacidad', 'ubicacion'], requiredFields: ['nombre'],
+  scheduleField: 'salonId', aliases: { ubicacion: 'edificio' }
+});
+registerAdminEntityRoutes({
+  path: 'materias', prefix: 'mat', label: 'Materia', collection: materias,
+  fields: ['nombre', 'codigo', 'programa', 'departamento'],
+  requiredFields: ['nombre', 'codigo', 'programa', 'departamento'], scheduleField: 'materiaId'
+});
+registerAdminEntityRoutes({
+  path: 'estudiantes', prefix: 'est', label: 'Estudiante', collection: estudiantes,
+  fields: ['nombre', 'cedula', 'programa', 'semestre', 'email'],
+  requiredFields: ['nombre', 'cedula', 'programa', 'semestre'],
+  aliases: { programa: 'carrera' }
+});
+
 app.get('/', (req, res) => {
   res.json({ status: 'ok', service: 'academic-schedule-api' });
 });
@@ -389,9 +539,20 @@ app.patch('/api/v1/admin/horarios/:id', requireAdmin, async (req, res, next) => 
   }
 
   const previousSchedule = { ...schedule };
+  const updates = req.body || {};
+  const referenceFields = [
+    ['materiaId', getMateriaById, 'Materia'],
+    ['profesorId', getProfesorById, 'Docente'],
+    ['salonId', getSalonById, 'Salón']
+  ];
+  for (const [field, findById, label] of referenceFields) {
+    if (Object.prototype.hasOwnProperty.call(updates, field) && !findById(updates[field])) {
+      return res.status(400).json({ success: false, message: `${label} no válido` });
+    }
+  }
   const allowedFields = ['horaInicio', 'horaFin', 'fecha', 'modalidad', 'semestre', 'carrera', 'materiaId', 'profesorId', 'salonId'];
   allowedFields.forEach((field) => {
-    if (Object.prototype.hasOwnProperty.call(req.body, field)) schedule[field] = req.body[field];
+    if (Object.prototype.hasOwnProperty.call(updates, field)) schedule[field] = updates[field];
   });
 
   touchScheduleUpdate();
@@ -416,35 +577,6 @@ app.delete('/api/v1/admin/horarios/:id', requireAdmin, async (req, res, next) =>
   });
   if (saveFailure) return saveFailure;
   return res.json({ success: true, message: 'Horario eliminado' });
-});
-
-app.patch('/api/v1/admin/profesores/:id', requireAdmin, async (req, res, next) => {
-  const professor = getProfesorById(req.params.id);
-
-  if (!professor) return res.status(404).json({ success: false, message: 'Profesor no encontrado' });
-
-  const previousProfessor = { ...professor };
-  ['nombre', 'email', 'telefono', 'departamento', 'oficina', 'horarioAtencion'].forEach((field) => {
-    if (typeof req.body[field] === 'string') professor[field] = req.body[field].trim();
-  });
-
-  const saveFailure = await persistAdminChange(res, { profesores, materias, salones, estudiantes, horarios }, () => Object.assign(professor, previousProfessor));
-  if (saveFailure) return saveFailure;
-  return res.json({ success: true, data: professor });
-});
-
-app.patch('/api/v1/admin/materias/:id', requireAdmin, async (req, res, next) => {
-  const subject = getMateriaById(req.params.id);
-  if (!subject) return res.status(404).json({ success: false, message: 'Materia no encontrada' });
-
-  const previousSubject = { ...subject };
-  ['nombre', 'codigo', 'programa', 'departamento'].forEach((field) => {
-    if (typeof req.body[field] === 'string') subject[field] = req.body[field].trim();
-  });
-
-  const saveFailure = await persistAdminChange(res, { profesores, materias, salones, estudiantes, horarios }, () => Object.assign(subject, previousSubject));
-  if (saveFailure) return saveFailure;
-  return res.json({ success: true, data: subject });
 });
 
 app.get('/api/v1/profesores', (req, res) => {
@@ -619,7 +751,12 @@ async function start() {
 async function runBackup() {
   try {
     const state = await getAcademicState();
-    if (!state) return null;
+    if (!state) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('No hay estado académico persistido para generar el backup.');
+      }
+      return null;
+    }
     const backupsDirectory = path.join(__dirname, 'backups');
     await fs.mkdir(backupsDirectory, { recursive: true });
     const now = new Date();
@@ -628,7 +765,8 @@ async function runBackup() {
     await fs.writeFile(filePath, JSON.stringify(state, null, 2), 'utf8');
     return filePath;
   } catch (error) {
-    console.warn('No se pudo crear el backup; PostgreSQL no está disponible:', error.message);
+    console.warn('No se pudo crear el backup:', error.code || 'SIN_CODIGO', error.message);
+    if (process.env.NODE_ENV === 'production') throw error;
     return null;
   }
 }
