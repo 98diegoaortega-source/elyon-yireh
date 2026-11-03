@@ -8,8 +8,22 @@ const pool = DATABASE_URL
   ? new Pool({ connectionString: DATABASE_URL, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false })
   : null;
 
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+function isDatabaseConfigured() {
+  return pool !== null;
+}
+
+async function checkDatabase() {
+  if (!pool) throw new Error('PostgreSQL no está configurado.');
+  await pool.query('SELECT 1');
+}
+
 async function loadState(state) {
-  if (!pool) return;
+  if (!pool) {
+    if (IS_PRODUCTION) throw new Error('DATABASE_URL es obligatorio en producción.');
+    return;
+  }
   await pool.query(`CREATE TABLE IF NOT EXISTS academic_state (
     id integer PRIMARY KEY,
     profesores jsonb NOT NULL,
@@ -28,6 +42,9 @@ async function loadState(state) {
   )`);
   const { rows } = await pool.query('SELECT profesores, materias, salones, estudiantes, horarios FROM academic_state WHERE id = 1');
   if (!rows[0]) {
+    if (IS_PRODUCTION) {
+      throw new Error('La base de producción no tiene estado académico; no se cargarán datos de ejemplo.');
+    }
     await saveState(state);
     return;
   }
@@ -97,4 +114,13 @@ async function getAcademicState() {
   return rows[0] || null;
 }
 
-module.exports = { loadState, saveState, trackAnalytics, getTopAnalytics, getTotalAnalyticsToday, getAcademicState };
+module.exports = {
+  loadState,
+  saveState,
+  trackAnalytics,
+  getTopAnalytics,
+  getTotalAnalyticsToday,
+  getAcademicState,
+  isDatabaseConfigured,
+  checkDatabase
+};

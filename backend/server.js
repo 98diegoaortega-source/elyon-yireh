@@ -9,7 +9,16 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const { profesores, materias, salones, estudiantes, horarios, horariosCorte6 } = require('./data');
-const { loadState, saveState, trackAnalytics, getTopAnalytics, getTotalAnalyticsToday, getAcademicState } = require('./persistence');
+const {
+  loadState,
+  saveState,
+  trackAnalytics,
+  getTopAnalytics,
+  getTotalAnalyticsToday,
+  getAcademicState,
+  isDatabaseConfigured,
+  checkDatabase
+} = require('./persistence');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -37,6 +46,7 @@ const allowedOrigins = new Set(configuredOrigins.split(',').map((origin) => orig
 const SCHEDULE_CACHE_TTL = 5 * 60 * 1000;
 const scheduleCache = new Map();
 let lastScheduleUpdate = new Date().toISOString();
+let databaseReadyAtStartup = false;
 
 app.use(helmet());
 app.use(compression());
@@ -388,12 +398,30 @@ app.get('/', (req, res) => {
   res.json({ status: 'ok', service: 'academic-schedule-api' });
 });
 
-app.get('/api/v1/health', (req, res) => {
-  res.json({
-    status: 'ok',
+app.get('/api/v1/health', async (req, res) => {
+  const serviceInfo = {
     service: 'academic-schedule-api',
-    version: '1.0.0',
-    timestamp: new Date().toISOString()
+    version: '1.0.0'
+  };
+
+  if (req.query.database === 'check') {
+    if (!isDatabaseConfigured()) {
+      return res.status(503).json({ status: 'error', ...serviceInfo, database: 'unavailable' });
+    }
+
+    try {
+      await checkDatabase();
+      return res.json({ status: 'ok', ...serviceInfo, database: 'connected' });
+    } catch {
+      console.warn('Comprobación de salud: PostgreSQL no disponible.');
+      return res.status(503).json({ status: 'error', ...serviceInfo, database: 'unavailable' });
+    }
+  }
+
+  return res.json({
+    status: 'ok',
+    ...serviceInfo,
+    database: databaseReadyAtStartup ? 'connected_at_startup' : 'not_configured_or_unavailable_at_startup'
   });
 });
 
@@ -752,7 +780,9 @@ app.get('/api/v1/estudiante/:id/horario', (req, res) => {
 async function start() {
   try {
     await loadState({ profesores, materias, salones, estudiantes, horarios });
+    databaseReadyAtStartup = isDatabaseConfigured();
   } catch (error) {
+    if (process.env.NODE_ENV === 'production') throw error;
     console.warn('No se pudo cargar PostgreSQL; se usarán los datos en memoria:', error.message);
   }
   app.listen(PORT, () => console.log(`API académica ejecutándose en http://localhost:${PORT}`));
