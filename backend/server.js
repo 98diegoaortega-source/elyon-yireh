@@ -564,7 +564,7 @@ app.post('/api/v1/agente/consulta', async (req, res) => {
       ...openAiRequest(
         'https://openrouter.ai/api/v1/chat/completions',
         process.env.OPENROUTER_API_KEY,
-        'nvidia/nemotron-3.5-lightning:free',
+        'nvidia/nemotron-3-ultra-550b-a55b:free',
         {
           'HTTP-Referer': 'https://elyon-yireh-app.vercel.app',
           'X-Title': 'Elyon Yireh'
