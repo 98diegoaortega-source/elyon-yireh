@@ -590,6 +590,12 @@ app.post('/api/v1/agente/consulta', async (req, res) => {
     }
   ].filter(Boolean);
 
+  if (!providers.length) {
+    console.error('Error Groq: GROQ_API_KEY no está configurada.');
+    console.error('Error OpenRouter: OPENROUTER_API_KEY no está configurada.');
+    console.error('Error Gemini: GEMINI_API_KEY no está configurada.');
+  }
+
   for (const provider of providers) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 12000);
@@ -601,20 +607,28 @@ app.post('/api/v1/agente/consulta', async (req, res) => {
         body: JSON.stringify(provider.body)
       });
       if (!response.ok) {
-        console.warn(`${provider.name} no pudo responder; se probará el siguiente proveedor (HTTP ${response.status}).`);
+        let detail = '';
+        try {
+          const errorBody = await response.json();
+          const message = errorBody.error?.message || errorBody.message;
+          if (typeof message === 'string') detail = `: ${message.slice(0, 300)}`;
+        } catch {
+          detail = '';
+        }
+        console.error(`Error ${provider.name}: HTTP ${response.status}${detail}`);
         continue;
       }
 
       const result = await response.json();
       const respuesta = provider.extract(result);
       if (!respuesta) {
-        console.warn(`${provider.name} devolvió una respuesta vacía; se probará el siguiente proveedor.`);
+        console.error(`Error ${provider.name}: la API devolvió una respuesta vacía o con formato inesperado.`);
         continue;
       }
       return res.json({ success: true, respuesta });
     } catch (error) {
-      console.warn(`${provider.name} no disponible; se probará el siguiente proveedor:`,
-        error.name === 'AbortError' ? 'tiempo de espera agotado' : error.message);
+      const message = error.name === 'AbortError' ? 'tiempo de espera agotado' : error.message;
+      console.error(`Error ${provider.name}: ${message}`);
     } finally {
       clearTimeout(timeoutId);
     }
