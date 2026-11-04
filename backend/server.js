@@ -242,7 +242,8 @@ async function persistAdminChange(res, state, rollback) {
   try {
     await safeSaveState(state);
     return null;
-  } catch {
+  } catch (error) {
+    console.error('Falló la persistencia de un cambio administrativo:', error.code || 'SIN_CODIGO', error.message);
     rollback();
     return res.status(500).json({ success: false, message: 'No se pudo guardar el cambio. Intenta de nuevo.' });
   }
@@ -677,97 +678,131 @@ app.post('/api/v1/admin/importar-horarios', requireAdmin, async (req, res) => {
   const created = { profesores: 0, materias: 0, salones: 0 };
   const results = [];
 
-  rows.forEach(({ rowNumber, data }) => {
-    const number = Number.isInteger(rowNumber) && rowNumber > 0 ? rowNumber : results.length + 1;
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
-      results.push({ rowNumber: number, ok: false, message: 'La fila no contiene datos de horario válidos.' });
-      return;
-    }
+  for (const [index, entry] of rows.entries()) {
+    const rowNumber = Number.isInteger(entry?.rowNumber) && entry.rowNumber > 0 ? entry.rowNumber : index + 1;
+    const rowLengths = {
+      profesores: profesores.length,
+      materias: materias.length,
+      salones: salones.length,
+      horarios: horarios.length
+    };
+    try {
+      const { data } = entry || {};
+      if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw new Error('La fila no contiene datos de horario válidos.');
+      }
 
-    const values = Object.fromEntries(
-      ['carrera', 'semestre', 'fecha', 'horaInicio', 'horaFin', 'modalidad', 'materia', 'profesor', 'salon']
-        .map((field) => [field, String(data[field] || '').trim()])
-    );
-    values.modalidad ||= 'Presencial';
-    const missing = ['carrera', 'semestre', 'fecha', 'horaInicio', 'horaFin', 'materia', 'profesor', 'salon']
-      .filter((field) => !values[field]);
-    if (missing.length) {
-      results.push({ rowNumber: number, ok: false, message: `Faltan campos obligatorios: ${missing.join(', ')}.` });
-      return;
-    }
-    if (Object.values(values).some((value) => value.length > 200)) {
-      results.push({ rowNumber: number, ok: false, message: 'Un campo supera el máximo de 200 caracteres.' });
-      return;
-    }
+      const fields = ['carrera', 'semestre', 'fecha', 'horaInicio', 'horaFin', 'modalidad', 'materia', 'profesor', 'salon'];
+      const values = Object.fromEntries(fields.map((field) => {
+        const value = data[field];
+        if (value == null) return [field, ''];
+        if (typeof value !== 'string' && typeof value !== 'number') {
+          throw new Error(`El campo ${field} debe ser texto.`);
+        }
+        return [field, String(value).trim()];
+      }));
+      values.modalidad ||= 'Presencial';
+      const missing = ['carrera', 'semestre', 'fecha', 'horaInicio', 'horaFin', 'materia', 'profesor', 'salon']
+        .filter((field) => !values[field]);
+      if (missing.length) throw new Error(`Faltan campos obligatorios: ${missing.join(', ')}.`);
+      if (Object.values(values).some((value) => value.length > 200)) {
+        throw new Error('Un campo supera el máximo de 200 caracteres.');
+      }
 
-    let profesor = findImportedEntity(profesores, values.profesor, ['id', 'nombre']);
-    if (!profesor) {
-      const initials = values.profesor.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
-      profesor = createImportedEntity(profesores, 'prof', {
-        nombre: values.profesor,
-        email: '',
-        telefono: '',
-        departamento: values.carrera,
-        oficina: '',
-        horarioAtencion: '',
-        foto: initials
+      let profesor = findImportedEntity(profesores, values.profesor, ['id', 'nombre']);
+      if (!profesor) {
+        const initials = values.profesor.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+        profesor = createImportedEntity(profesores, 'prof', {
+          nombre: values.profesor,
+          email: '',
+          telefono: '',
+          departamento: values.carrera,
+          oficina: '',
+          horarioAtencion: '',
+          foto: initials
+        });
+        created.profesores += 1;
+      }
+
+      let salon = findImportedEntity(salones, values.salon, ['id', 'nombre']);
+      if (!salon) {
+        salon = createImportedEntity(salones, 'salon', {
+          nombre: values.salon,
+          capacidad: null,
+          edificio: ''
+        });
+        created.salones += 1;
+      }
+
+      let materia = findImportedEntity(materias, values.materia, ['id', 'nombre', 'codigo']);
+      if (!materia) {
+        const id = nextAdminEntityId('mat', materias);
+        materia = {
+          id,
+          nombre: values.materia,
+          codigo: `IMP-${id.toUpperCase()}`,
+          programa: values.carrera,
+          departamento: values.carrera
+        };
+        materias.push(materia);
+        created.materias += 1;
+      }
+
+      horarios.push({
+        id: `admin-schedule-${Date.now()}-${rowNumber}-${horarios.length}`,
+        materiaId: materia.id,
+        profesorId: profesor.id,
+        salonId: salon.id,
+        dia: 'Importado',
+        fecha: values.fecha,
+        horaInicio: values.horaInicio,
+        horaFin: values.horaFin,
+        modalidad: values.modalidad,
+        corte: '',
+        carrera: values.carrera,
+        semestre: values.semestre,
+        estudianteIds: []
       });
-      created.profesores += 1;
+      results.push({ rowNumber, ok: true, message: 'Horario importado con sus entidades.' });
+    } catch (error) {
+      created.profesores -= profesores.length - rowLengths.profesores;
+      created.materias -= materias.length - rowLengths.materias;
+      created.salones -= salones.length - rowLengths.salones;
+      profesores.splice(rowLengths.profesores);
+      materias.splice(rowLengths.materias);
+      salones.splice(rowLengths.salones);
+      horarios.splice(rowLengths.horarios);
+      console.error(`Falló la fila ${rowNumber} de la importación:`, error.stack || error.message);
+      results.push({ rowNumber, ok: false, message: error.message || 'No se pudo importar esta fila.' });
     }
-
-    let salon = findImportedEntity(salones, values.salon, ['id', 'nombre']);
-    if (!salon) {
-      salon = createImportedEntity(salones, 'salon', {
-        nombre: values.salon,
-        capacidad: null,
-        edificio: ''
-      });
-      created.salones += 1;
-    }
-
-    let materia = findImportedEntity(materias, values.materia, ['id', 'nombre', 'codigo']);
-    if (!materia) {
-      const id = nextAdminEntityId('mat', materias);
-      materia = {
-        id,
-        nombre: values.materia,
-        codigo: `IMP-${id.toUpperCase()}`,
-        programa: values.carrera,
-        departamento: values.carrera
-      };
-      materias.push(materia);
-      created.materias += 1;
-    }
-
-    horarios.push({
-      id: `admin-schedule-${Date.now()}-${number}-${horarios.length}`,
-      materiaId: materia.id,
-      profesorId: profesor.id,
-      salonId: salon.id,
-      dia: 'Importado',
-      fecha: values.fecha,
-      horaInicio: values.horaInicio,
-      horaFin: values.horaFin,
-      modalidad: values.modalidad,
-      corte: '',
-      carrera: values.carrera,
-      semestre: values.semestre,
-      estudianteIds: []
-    });
-    results.push({ rowNumber: number, ok: true, message: 'Horario importado con sus entidades.' });
-  });
+  }
 
   const imported = results.filter((result) => result.ok).length;
   if (imported) {
     touchScheduleUpdate();
-    const saveFailure = await persistAdminChange(res, { profesores, materias, salones, estudiantes, horarios }, () => {
+    try {
+      await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
+    } catch (error) {
+      console.error('Falló el guardado del lote de importación:', error.code || 'SIN_CODIGO', error.stack || error.message);
       profesores.splice(previousLengths.profesores);
       materias.splice(previousLengths.materias);
       salones.splice(previousLengths.salones);
       horarios.splice(previousLengths.horarios);
       touchScheduleUpdate();
-    });
-    if (saveFailure) return saveFailure;
+      results.forEach((result) => {
+        if (result.ok) {
+          result.ok = false;
+          result.message = 'No se pudo guardar este horario en la base de datos.';
+        }
+      });
+      return res.status(500).json({
+        success: false,
+        imported: 0,
+        created: { profesores: 0, materias: 0, salones: 0 },
+        results,
+        message: 'No se pudo guardar la importación. Intenta de nuevo.'
+      });
+    }
   }
 
   return res.json({ success: true, imported, created, results });
