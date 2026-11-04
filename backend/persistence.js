@@ -55,6 +55,21 @@ async function loadState(state) {
 
 async function saveState(state) {
   if (!pool) return;
+  const stateFields = ['profesores', 'materias', 'salones', 'estudiantes', 'horarios'];
+  const serializedState = {};
+  const expectedState = {};
+  for (const field of stateFields) {
+    if (!Array.isArray(state[field])) {
+      throw new TypeError(`El estado académico "${field}" debe ser un array.`);
+    }
+    const serialized = JSON.stringify(state[field]);
+    if (serialized === undefined) {
+      throw new TypeError(`No se pudo serializar el estado académico "${field}".`);
+    }
+    serializedState[field] = serialized;
+    expectedState[field] = JSON.parse(serialized);
+  }
+
   const client = await pool.connect();
   let transactionStarted = false;
   try {
@@ -64,11 +79,11 @@ async function saveState(state) {
     VALUES (1, $1::jsonb, $2::jsonb, $3::jsonb, $4::jsonb, $5::jsonb)
     ON CONFLICT (id) DO UPDATE SET profesores = EXCLUDED.profesores, materias = EXCLUDED.materias,
       salones = EXCLUDED.salones, estudiantes = EXCLUDED.estudiantes, horarios = EXCLUDED.horarios, updated_at = now()`,
-    [state.profesores, state.materias, state.salones, state.estudiantes, state.horarios]);
+    stateFields.map((field) => serializedState[field]));
 
     // Lee dentro de la transacción para confirmar exactamente el estado persistido.
     const { rows } = await client.query('SELECT profesores, materias, salones, estudiantes, horarios FROM academic_state WHERE id = 1');
-    if (!rows[0] || !Object.keys(state).every((key) => isDeepStrictEqual(rows[0][key], state[key]))) {
+    if (!rows[0] || !stateFields.every((key) => isDeepStrictEqual(rows[0][key], expectedState[key]))) {
       throw new Error('La verificación posterior al guardado no coincide con el estado enviado.');
     }
 
