@@ -49,6 +49,7 @@ http://localhost:4000
 - GET /api/v1/ultima-actualizacion
 - GET /api/v1/estadisticas-graficos
 - POST /api/v1/chat
+- POST /api/v1/agente/consulta
 - GET /api/v1/profesores
 - GET /api/v1/profesores/:id
 - GET /api/v1/materias
@@ -74,6 +75,10 @@ Todas estas rutas requieren `Authorization: Bearer <token>` obtenido con el inic
 
 Las altas, ediciones y eliminaciones se guardan en PostgreSQL cuando está configurado. La eliminación de un docente, salón o materia asociado a horarios responde `409` e identifica los horarios vinculados. Al eliminar un estudiante, se quitan también sus vínculos de los horarios.
 En salones, el campo `ubicacion` se mantiene compatible con el campo existente `edificio`; en estudiantes, `programa` se mantiene compatible con `carrera`.
+
+La importación administrativa acepta archivos Excel y CSV con columnas de programa, semestre, fecha, horaInicio, horaFin, materia, docente y salón. La ruta autenticada `POST /api/v1/admin/importar-horarios` crea docentes, salones y materias que no existan y guarda hasta 200 horarios por solicitud. La modalidad es opcional y toma `Presencial` como valor predeterminado.
+
+El asistente de consulta `POST /api/v1/agente/consulta` usa Gemini con información académica cargada desde el estado persistido. Para activarlo, crea una API key en [Google AI Studio](https://aistudio.google.com/app/apikey) y guárdala como `GEMINI_API_KEY` en las variables de entorno del servicio backend en Render. No pongas la clave en el frontend ni la compartas por chat. Después de guardarla, vuelve a desplegar el servicio.
 
 ## Depuración
 

@@ -354,12 +354,12 @@
     <button id="chatButton" class="chat-fab" type="button" aria-label="Abrir asistente académico"><i class="ph ph-chat-circle-dots"></i></button>
     <aside id="chatPanel" class="chat-panel" aria-hidden="true">
       <div class="chat-header"><div><p class="chat-eyebrow">Asistente académico</p><h2>ELYON YIREH</h2></div><button id="closeChatButton" type="button" aria-label="Cerrar chat"><i class="ph ph-x"></i></button></div>
-      <div id="chatMessages" class="chat-messages"><div class="chat-bubble chat-bubble-assistant">Hola. Pregúntame por profesores, programas, aulas u horarios.</div></div>
-      <form id="chatForm" class="chat-form"><input id="chatInput" maxlength="160" placeholder="¿A qué hora enseña...?" autocomplete="off" /><button type="submit" aria-label="Enviar pregunta"><i class="ph ph-paper-plane-tilt"></i></button></form>
+      <div id="chatMessages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions"><div class="chat-bubble chat-bubble-assistant">Hola. Pregúntame por profesores, materias, salones u horarios.</div></div>
+      <form id="chatForm" class="chat-form"><input id="chatInput" maxlength="500" placeholder="Pregunta sobre horarios o materias..." autocomplete="off" /><button type="submit" aria-label="Enviar pregunta"><i class="ph ph-paper-plane-tilt"></i></button></form>
     </aside>
 
     <script src="./api-config.js?v=2"></script>
-    <script src="./app.js?v=9"></script>
+    <script src="./app.js?v=10"></script>
     <script src="./admin-entities.js?v=1"></script>
     <script>
       function forceFrontendUpdate() {
@@ -383,7 +383,7 @@
 
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js?v=9').catch((error) => {
+          navigator.serviceWorker.register('/service-worker.js?v=10').catch((error) => {
             console.error('No se pudo registrar el Service Worker:', error);
           });
         });

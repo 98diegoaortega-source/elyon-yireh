@@ -256,6 +256,19 @@ function nextAdminEntityId(prefix, collection) {
   return `${prefix}-${String(highest + 1).padStart(3, '0')}`;
 }
 
+function findImportedEntity(collection, value, fields) {
+  const normalizedValue = normalizeText(value);
+  return collection.find((entity) => fields.some((field) =>
+    entity[field] && normalizeText(entity[field]) === normalizedValue
+  ));
+}
+
+function createImportedEntity(collection, prefix, fields) {
+  const entity = { ...fields, id: nextAdminEntityId(prefix, collection) };
+  collection.push(entity);
+  return entity;
+}
+
 function normalizeAdminEntity(body, fields) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
   const result = {};
@@ -485,6 +498,85 @@ app.get('/api/v1/estadisticas-graficos', (req, res) => {
   return res.json(getGraphStatistics());
 });
 
+app.post('/api/v1/agente/consulta', async (req, res) => {
+  const pregunta = String(req.body?.pregunta || '').trim();
+  if (!pregunta || pregunta.length > 500) {
+    return res.status(400).json({ success: false, message: 'Escribe una pregunta de hasta 500 caracteres.' });
+  }
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(503).json({ success: false, message: 'El asistente todavía no está configurado. Intenta más tarde.' });
+  }
+
+  const contexto = {
+    profesores: profesores.map(({ id, nombre, departamento }) => ({ id, nombre, departamento })),
+    materias: materias.map(({ id, nombre, codigo, programa }) => ({ id, nombre, codigo, programa })),
+    horarios: horarios.slice(0, 200).map((item) => {
+      const hydrated = hydrateSchedule(item);
+      return {
+        programa: hydrated.carrera || hydrated.materia?.programa,
+        semestre: hydrated.semestre,
+        fecha: hydrated.fecha,
+        dia: hydrated.dia,
+        horaInicio: hydrated.horaInicio,
+        horaFin: hydrated.horaFin,
+        modalidad: hydrated.modalidad,
+        materia: hydrated.materia?.nombre,
+        profesor: hydrated.profesor?.nombre || hydrated.docente,
+        salon: hydrated.salon?.nombre || hydrated.aula
+      };
+    })
+  };
+  if (!contexto.profesores.length && !contexto.materias.length && !contexto.horarios.length) {
+    return res.json({ success: true, respuesta: 'Todavía no hay información académica cargada para consultar.' });
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
+  try {
+    const response = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': process.env.GEMINI_API_KEY
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{
+              text: 'Eres el asistente académico de Elyon Yireh. Responde en español, de forma breve y amable. Usa únicamente los datos JSON proporcionados; no inventes docentes, materias, horarios ni disponibilidad. Si la información no aparece en los datos, dilo claramente. Los datos pueden estar vacíos. Contexto académico actual: ' + JSON.stringify(contexto)
+            }]
+          },
+          contents: [{ parts: [{ text: pregunta }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 512 }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      console.warn('Gemini rechazó la consulta académica:', response.status);
+      return res.status(502).json({ success: false, message: 'El asistente no pudo responder ahora. Intenta de nuevo más tarde.' });
+    }
+
+    const result = await response.json();
+    const respuesta = result.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text || '')
+      .join('')
+      .trim();
+    if (!respuesta) {
+      console.warn('Gemini devolvió una respuesta vacía.');
+      return res.status(502).json({ success: false, message: 'El asistente no devolvió una respuesta. Intenta de nuevo.' });
+    }
+    return res.json({ success: true, respuesta });
+  } catch (error) {
+    console.warn('No se pudo completar la consulta a Gemini:', error.name === 'AbortError' ? 'tiempo de espera agotado' : error.message);
+    return res.status(502).json({ success: false, message: 'No se pudo conectar con el asistente. Intenta de nuevo más tarde.' });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+});
+
 app.post('/api/v1/chat', (req, res) => {
   const pregunta = String(req.body?.pregunta || '').trim();
   if (!pregunta || pregunta.length > 160) {
@@ -523,6 +615,117 @@ app.post('/api/v1/admin/login', loginRateLimit, (req, res) => {
 
 app.get('/api/v1/admin/horarios', requireAdmin, (req, res) => {
   return res.json({ success: true, data: horarios.map(hydrateSchedule) });
+});
+
+app.post('/api/v1/admin/importar-horarios', requireAdmin, async (req, res) => {
+  const rows = req.body?.rows;
+  if (!Array.isArray(rows) || !rows.length || rows.length > 200) {
+    return res.status(400).json({ success: false, message: 'Envía entre 1 y 200 filas para importar.' });
+  }
+
+  const previousLengths = {
+    profesores: profesores.length,
+    materias: materias.length,
+    salones: salones.length,
+    horarios: horarios.length
+  };
+  const created = { profesores: 0, materias: 0, salones: 0 };
+  const results = [];
+
+  rows.forEach(({ rowNumber, data }) => {
+    const number = Number.isInteger(rowNumber) && rowNumber > 0 ? rowNumber : results.length + 1;
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      results.push({ rowNumber: number, ok: false, message: 'La fila no contiene datos de horario válidos.' });
+      return;
+    }
+
+    const values = Object.fromEntries(
+      ['carrera', 'semestre', 'fecha', 'horaInicio', 'horaFin', 'modalidad', 'materia', 'profesor', 'salon']
+        .map((field) => [field, String(data[field] || '').trim()])
+    );
+    values.modalidad ||= 'Presencial';
+    const missing = ['carrera', 'semestre', 'fecha', 'horaInicio', 'horaFin', 'materia', 'profesor', 'salon']
+      .filter((field) => !values[field]);
+    if (missing.length) {
+      results.push({ rowNumber: number, ok: false, message: `Faltan campos obligatorios: ${missing.join(', ')}.` });
+      return;
+    }
+    if (Object.values(values).some((value) => value.length > 200)) {
+      results.push({ rowNumber: number, ok: false, message: 'Un campo supera el máximo de 200 caracteres.' });
+      return;
+    }
+
+    let profesor = findImportedEntity(profesores, values.profesor, ['id', 'nombre']);
+    if (!profesor) {
+      const initials = values.profesor.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+      profesor = createImportedEntity(profesores, 'prof', {
+        nombre: values.profesor,
+        email: '',
+        telefono: '',
+        departamento: values.carrera,
+        oficina: '',
+        horarioAtencion: '',
+        foto: initials
+      });
+      created.profesores += 1;
+    }
+
+    let salon = findImportedEntity(salones, values.salon, ['id', 'nombre']);
+    if (!salon) {
+      salon = createImportedEntity(salones, 'salon', {
+        nombre: values.salon,
+        capacidad: null,
+        edificio: ''
+      });
+      created.salones += 1;
+    }
+
+    let materia = findImportedEntity(materias, values.materia, ['id', 'nombre', 'codigo']);
+    if (!materia) {
+      const id = nextAdminEntityId('mat', materias);
+      materia = {
+        id,
+        nombre: values.materia,
+        codigo: `IMP-${id.toUpperCase()}`,
+        programa: values.carrera,
+        departamento: values.carrera
+      };
+      materias.push(materia);
+      created.materias += 1;
+    }
+
+    horarios.push({
+      id: `admin-schedule-${Date.now()}-${number}-${horarios.length}`,
+      materiaId: materia.id,
+      profesorId: profesor.id,
+      salonId: salon.id,
+      dia: 'Importado',
+      fecha: values.fecha,
+      horaInicio: values.horaInicio,
+      horaFin: values.horaFin,
+      modalidad: values.modalidad,
+      corte: '',
+      carrera: values.carrera,
+      semestre: values.semestre,
+      estudianteIds: []
+    });
+    results.push({ rowNumber: number, ok: true, message: 'Horario importado con sus entidades.' });
+  });
+
+  const imported = results.filter((result) => result.ok).length;
+  if (imported) {
+    touchScheduleUpdate();
+    const saveFailure = await persistAdminChange(res, { profesores, materias, salones, estudiantes, horarios }, () => {
+      profesores.splice(previousLengths.profesores);
+      materias.splice(previousLengths.materias);
+      salones.splice(previousLengths.salones);
+      horarios.splice(previousLengths.horarios);
+      touchScheduleUpdate();
+    });
+    if (saveFailure) return saveFailure;
+  }
+
+  return res.json({ success: true, imported, created, results });
 });
 
 app.post('/api/v1/admin/horarios', requireAdmin, async (req, res, next) => {

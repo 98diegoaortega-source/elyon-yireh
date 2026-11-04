@@ -311,31 +311,18 @@ function getImportedValue(row, ...keys) {
   return entry ? String(entry[1]).trim() : '';
 }
 
-function resolveImportedId(value, records, label, searchableFields) {
-  const normalizedValue = normalize(value);
-  if (!normalizedValue) throw new Error(`Falta ${label}.`);
-
-  const matches = records.filter((record) => searchableFields.some((field) =>
-    record[field] && normalize(record[field]) === normalizedValue
-  ));
-  const uniqueMatches = [...new Map(matches.map((record) => [record.id, record])).values()];
-  if (!uniqueMatches.length) throw new Error(`${label} «${value}» no existe en el catálogo.`);
-  if (uniqueMatches.length > 1) throw new Error(`${label} «${value}» coincide con varios registros; usa su ID.`);
-  return uniqueMatches[0].id;
-}
-
-function mapImportedRowToSchedule(row, catalogs) {
-  const materia = getImportedValue(row, 'materiaId', 'materia', 'asignatura');
-  const profesor = getImportedValue(row, 'profesorId', 'docente', 'profesor');
-  const salon = getImportedValue(row, 'salonId', 'salon', 'aula');
+function mapImportedRowToSchedule(row) {
+  const materia = getImportedValue(row, 'materiaId', 'materia', 'asignatura', 'nombreMateria', 'modulo', 'nombreModulo', 'codigoMateria');
+  const profesor = getImportedValue(row, 'profesorId', 'docente', 'profesor', 'nombreDocente', 'nombreProfesor');
+  const salon = getImportedValue(row, 'salonId', 'salon', 'aula', 'nombreSalon');
   const carrera = getImportedValue(row, 'carrera', 'programa');
   const semestre = getImportedValue(row, 'semestre');
-  const fecha = getImportedValue(row, 'fecha');
+  const fecha = getImportedValue(row, 'fecha', 'periodo');
   const horaInicio = getImportedValue(row, 'horaInicio', 'inicio');
   const horaFin = getImportedValue(row, 'horaFin', 'fin');
   const modalidad = getImportedValue(row, 'modalidad');
 
-  const required = { carrera, semestre, fecha, horaInicio, horaFin, modalidad };
+  const required = { carrera, semestre, fecha, horaInicio, horaFin, materia, profesor, salon };
   const missing = Object.entries(required).filter(([, value]) => !value).map(([field]) => field);
   if (missing.length) throw new Error(`Faltan campos obligatorios: ${missing.join(', ')}.`);
 
@@ -345,16 +332,17 @@ function mapImportedRowToSchedule(row, catalogs) {
     fecha,
     horaInicio,
     horaFin,
-    modalidad,
-    materiaId: resolveImportedId(materia, catalogs.materias, 'Materia', ['id', 'nombre', 'codigo']),
-    profesorId: resolveImportedId(profesor, catalogs.profesores, 'Docente', ['id', 'nombre']),
-    salonId: resolveImportedId(salon, catalogs.salones, 'Salón', ['id', 'nombre'])
+    modalidad: modalidad || 'Presencial',
+    materia,
+    profesor,
+    salon
   };
 }
 
 function isScheduleImportRow(row) {
   return ['programa', 'carrera', 'semestre', 'fecha', 'horainicio', 'inicio', 'horafin', 'fin',
-    'docente', 'profesor', 'profesorid', 'salon', 'salonid', 'aula', 'materia', 'materiaid', 'asignatura']
+    'docente', 'nombredocente', 'profesor', 'nombreprofesor', 'profesorid', 'salon', 'nombresalon',
+    'salonid', 'aula', 'materia', 'nombremateria', 'materiaid', 'codigomateria', 'modulo', 'nombremodulo', 'asignatura']
     .some((key) => getImportedValue(row, key));
 }
 
@@ -401,30 +389,23 @@ async function importExcelFile(event) {
       .filter(({ row }) => isScheduleImportRow(row));
     let importedSchedules = 0;
     if (scheduleEntries.length) {
-      const [profesoresRes, materiasRes, salonesRes] = await Promise.all([
-        fetchJson(`${API_BASE_URL}/api/v1/profesores`),
-        fetchJson(`${API_BASE_URL}/api/v1/materias`),
-        fetchJson(`${API_BASE_URL}/api/v1/salones`)
-      ]);
-      const catalogs = {
-        profesores: profesoresRes.data || [],
-        materias: materiasRes.data || [],
-        salones: salonesRes.data || []
-      };
-
-      for (const { row, rowNumber } of scheduleEntries) {
+      const importedRows = scheduleEntries.map(({ row, rowNumber }) => {
         try {
-          const schedule = mapImportedRowToSchedule(row, catalogs);
-          await fetchJson(`${API_BASE_URL}/api/v1/admin/horarios`, {
-            method: 'POST',
-            headers: adminHeaders(),
-            body: JSON.stringify(schedule)
-          });
-          importedSchedules += 1;
-          results.push({ rowNumber, ok: true, message: 'Horario importado.' });
+          return { rowNumber, data: mapImportedRowToSchedule(row) };
         } catch (error) {
-          results.push({ rowNumber, ok: false, message: error.message || 'No se pudo importar el horario.' });
+          results.push({ rowNumber, ok: false, message: error.message || 'No se pudo leer la fila.' });
+          return null;
         }
+      }).filter(Boolean);
+
+      if (importedRows.length) {
+        const importResult = await fetchJson(`${API_BASE_URL}/api/v1/admin/importar-horarios`, {
+          method: 'POST',
+          headers: adminHeaders(),
+          body: JSON.stringify({ rows: importedRows })
+        });
+        importedSchedules = importResult.imported || 0;
+        results.push(...(importResult.results || []));
       }
     }
 
@@ -824,10 +805,14 @@ async function askChatbot(question) {
   addChatMessage(question, 'user');
   chatInput.value = '';
   try {
-    const result = await fetchJson(`${API_BASE_URL}/api/v1/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pregunta: question }) });
-    addChatMessage([result.respuesta, ...(result.horarios || [])].filter(Boolean).join('\n'), 'assistant');
-  } catch {
-    addChatMessage('No pude consultar el asistente. Intenta nuevamente.', 'assistant');
+    const result = await fetchJson(`${API_BASE_URL}/api/v1/agente/consulta`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pregunta: question })
+    });
+    addChatMessage(result.respuesta, 'assistant');
+  } catch (error) {
+    addChatMessage(error.message || 'No pude consultar el asistente. Intenta nuevamente.', 'assistant');
   }
 }
 
@@ -1190,8 +1175,16 @@ closeAboutButton.addEventListener('click', closeAbout);
 closeAboutFooter.addEventListener('click', closeAbout);
 aboutModal.addEventListener('click', (event) => { if (event.target === aboutModal) closeAbout(); });
 
-chatButton.addEventListener('click', () => { chatPanel.classList.add('is-open'); chatInput.focus(); });
-closeChatButton.addEventListener('click', () => chatPanel.classList.remove('is-open'));
+chatButton.addEventListener('click', () => {
+  chatPanel.classList.add('is-open');
+  chatPanel.setAttribute('aria-hidden', 'false');
+  chatInput.focus();
+});
+closeChatButton.addEventListener('click', () => {
+  chatPanel.classList.remove('is-open');
+  chatPanel.setAttribute('aria-hidden', 'true');
+  chatButton.focus();
+});
 chatForm.addEventListener('submit', (event) => {
   event.preventDefault();
   const question = chatInput.value.trim();
