@@ -126,6 +126,8 @@ async function fetchJson(url, options = {}) {
     if (!response.ok) {
       const apiError = new Error(result?.message || result?.error || `Error HTTP ${response.status}`);
       apiError.name = 'ApiError';
+      apiError.status = response.status;
+      apiError.errorId = result?.errorId;
       throw apiError;
     }
 
@@ -420,6 +422,30 @@ async function importExcelFile(event) {
       await loadData();
     }
   } catch (error) {
+    console.error('Falló la importación del archivo:', {
+      status: error.status || null,
+      message: error.message,
+      errorId: error.errorId || null,
+      cause: error.cause
+    });
+    if (error.status === 401) {
+      adminToken = '';
+      sessionStorage.removeItem('academic_admin_token');
+      adminEditor.classList.add('hidden');
+      adminLogin.classList.remove('hidden');
+      adminLoginMessage.textContent = 'Tu sesión de administrador expiró. Inicia sesión de nuevo y vuelve a importar el archivo.';
+      importStatus.textContent = 'Sesión expirada. Inicia sesión de nuevo para importar.';
+      return;
+    }
+    if (error.status === 500) {
+      const reference = error.errorId ? ` Referencia: ${error.errorId}.` : '';
+      importStatus.textContent = `Error del servidor (500): ${error.message || 'No se pudo guardar la importación.'}${reference}`;
+      return;
+    }
+    if (error.status) {
+      importStatus.textContent = `Error HTTP ${error.status}: ${error.message}`;
+      return;
+    }
     importStatus.textContent = error.message || 'No se pudo importar el archivo Excel.';
   } finally {
     event.target.value = '';

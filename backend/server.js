@@ -211,6 +211,9 @@ function requireAdmin(req, res, next) {
   } catch {
     return res.status(401).json({ success: false, message: 'Token de administrador inválido o expirado' });
   }
+  if (req.admin.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Esta sesión no tiene permisos de administrador.' });
+  }
 
   return next();
 }
@@ -783,7 +786,8 @@ app.post('/api/v1/admin/importar-horarios', requireAdmin, async (req, res) => {
     try {
       await safeSaveState({ profesores, materias, salones, estudiantes, horarios });
     } catch (error) {
-      console.error('Falló el guardado del lote de importación:', error.code || 'SIN_CODIGO', error.stack || error.message);
+      const errorId = `import-${Date.now()}`;
+      console.error(`Falló el guardado del lote de importación [${errorId}]:`, error.code || 'SIN_CODIGO', error.stack || error.message);
       profesores.splice(previousLengths.profesores);
       materias.splice(previousLengths.materias);
       salones.splice(previousLengths.salones);
@@ -800,6 +804,7 @@ app.post('/api/v1/admin/importar-horarios', requireAdmin, async (req, res) => {
         imported: 0,
         created: { profesores: 0, materias: 0, salones: 0 },
         results,
+        errorId,
         message: 'No se pudo guardar la importación. Intenta de nuevo.'
       });
     }
