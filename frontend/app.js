@@ -10,8 +10,6 @@ const state = {
 
 const MEMBER_STORAGE_KEY = 'elyon_yireh_members';
 
-let horariosCorte6 = [];
-let verTodos = true;
 let franjaSeleccionada = 'todas';
 
 const searchInput = document.getElementById('searchInput');
@@ -157,35 +155,19 @@ async function loadData() {
   }, 5000);
 
   try {
-    const [scheduleRes, teachersRes, statisticsRes] = await Promise.all([
+    const [scheduleRes, teachersRes] = await Promise.all([
       fetchJson(`${API_BASE_URL}/api/v1/horarios`),
-      fetchJson(`${API_BASE_URL}/api/v1/profesores`),
-      fetchJson(`${API_BASE_URL}/api/v1/estadisticas`)
+      fetchJson(`${API_BASE_URL}/api/v1/profesores`)
     ]);
 
     state.allSchedule = scheduleRes.data || [];
     state.allTeachers = teachersRes.data || [];
-    renderStatistics(statisticsRes);
+    renderStatistics();
     renderFavorites();
     render();
   } finally {
     clearTimeout(slowMessage);
     setLoading(false);
-  }
-}
-
-async function cargarCorte6() {
-  try {
-    const result = await fetchJson(`${API_BASE_URL}/api/v1/horarios-corte6`);
-    if (result.ok !== true || !Array.isArray(result.data)) {
-      throw new Error('La respuesta de horarios del Corte 6 no tiene el formato esperado');
-    }
-    horariosCorte6 = result.data;
-    renderFavorites();
-    render();
-  } catch (error) {
-    console.error('Error cargando horarios del Corte 6:', error);
-    cardsContainer.innerHTML = '<div class="glass rounded-3xl p-6 text-rose-600">No se pudieron cargar los horarios del Corte 6.</div>';
   }
 }
 
@@ -196,9 +178,12 @@ function setLoading(value) {
   }
 }
 
-function renderStatistics(data) {
-  if (!data || !statistics) return;
-  statistics.textContent = `${data.profesores} profesores � ${data.horarios} horarios � ${data.programas} programas`;
+function renderStatistics() {
+  if (!statistics) return;
+  const programs = new Set(state.allSchedule
+    .map((item) => item.programa || item.carrera || item.materia?.programa)
+    .filter(Boolean));
+  statistics.textContent = `${state.allTeachers.length} profesores | ${state.allSchedule.length} horarios | ${programs.size} programas`;
 }
 
 function getStoredMembers() {
@@ -470,9 +455,7 @@ function getFavorites() {
 }
 
 function getAllSchedule() {
-  return [...new Map(
-    [...state.allSchedule, ...horariosCorte6].map((item) => [item.id, item])
-  ).values()];
+  return state.allSchedule;
 }
 
 function isFavorite(id) {
@@ -653,7 +636,7 @@ function getFilteredSchedule() {
   const career = careerFilter?.value || '';
   const room = roomFilter?.value || '';
 
-  const source = verTodos ? getAllSchedule() : horariosCorte6;
+  const source = getAllSchedule();
 
   let lista = source.filter((item) => {
     const matchesSemester = !semester || item.semestre === semester;
@@ -691,8 +674,6 @@ function renderCards(items, agrupar = false) {
 
   const tabs = `
     <div class="glass col-span-full mb-4 flex items-center gap-3 rounded-2xl p-4">
-      <input type="checkbox" id="verTodosCheck" class="h-5 w-5 cursor-pointer accent-green-700" ${verTodos ? 'checked' : ''}>
-      <label for="verTodosCheck" class="cursor-pointer text-sm font-medium text-slate-700">Ver todos los horarios</label>
       <span id="contadorHorarios" class="ml-auto text-xs text-slate-500"></span>
     </div>
     <div id="franjaFiltros" class="mb-4 flex flex-wrap gap-2">
@@ -1088,11 +1069,6 @@ async function createAdminRow(event) {
 }
 
 searchInput.addEventListener('input', scheduleSearch);
-cardsContainer.addEventListener('change', (event) => {
-  if (event.target.id !== 'verTodosCheck') return;
-  verTodos = event.target.checked;
-  render();
-});
 document.addEventListener('click', (event) => {
   const button = event.target.closest('.franja-btn');
   if (!button) return;
@@ -1282,7 +1258,6 @@ loadData().catch((error) => {
   cardsContainer.innerHTML = '<div class="glass rounded-3xl p-6 text-rose-600">No se pudo conectar con el servidor. Verifica tu conexi�n a internet.</div>';
   forceRefreshButton.classList.remove('hidden');
 });
-cargarCorte6();
 
 if (pwaSplash && window.matchMedia('(display-mode: standalone)').matches) {
   setTimeout(() => pwaSplash.classList.add('is-hidden'), 1500);

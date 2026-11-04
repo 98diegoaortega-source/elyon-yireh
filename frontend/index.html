@@ -358,8 +358,8 @@
       <form id="chatForm" class="chat-form"><input id="chatInput" maxlength="160" placeholder="¿A qué hora enseña...?" autocomplete="off" /><button type="submit" aria-label="Enviar pregunta"><i class="ph ph-paper-plane-tilt"></i></button></form>
     </aside>
 
-    <script src="./api-config.js?v=1"></script>
-    <script src="./app.js?v=8"></script>
+    <script src="./api-config.js?v=2"></script>
+    <script src="./app.js?v=9"></script>
     <script src="./admin-entities.js?v=1"></script>
     <script>
       function forceFrontendUpdate() {
@@ -383,7 +383,7 @@
 
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js?v=8').catch((error) => {
+          navigator.serviceWorker.register('/service-worker.js?v=9').catch((error) => {
             console.error('No se pudo registrar el Service Worker:', error);
           });
         });
