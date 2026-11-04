@@ -564,7 +564,7 @@ app.post('/api/v1/agente/consulta', async (req, res) => {
       ...openAiRequest(
         'https://openrouter.ai/api/v1/chat/completions',
         process.env.OPENROUTER_API_KEY,
-        'meta-llama/llama-3.3-70b-instruct:free',
+        'nvidia/nemotron-3.5-lightning:free',
         {
           'HTTP-Referer': 'https://elyon-yireh-app.vercel.app',
           'X-Title': 'Elyon Yireh'
@@ -573,7 +573,7 @@ app.post('/api/v1/agente/consulta', async (req, res) => {
     },
     process.env.GEMINI_API_KEY && {
       name: 'Gemini',
-      url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': process.env.GEMINI_API_KEY
@@ -590,10 +590,23 @@ app.post('/api/v1/agente/consulta', async (req, res) => {
     }
   ].filter(Boolean);
 
+  const redactProviderSecrets = (message) => [process.env.GROQ_API_KEY, process.env.OPENROUTER_API_KEY, process.env.GEMINI_API_KEY]
+    .filter(Boolean)
+    .reduce((redacted, key) => redacted.split(key).join('[redacted]'), String(message));
+
   if (!providers.length) {
     console.error('Error Groq: GROQ_API_KEY no está configurada.');
     console.error('Error OpenRouter: OPENROUTER_API_KEY no está configurada.');
     console.error('Error Gemini: GEMINI_API_KEY no está configurada.');
+  }
+
+  const providerErrors = [];
+  for (const [name, key] of [
+    ['Groq', 'GROQ_API_KEY'],
+    ['OpenRouter', 'OPENROUTER_API_KEY'],
+    ['Gemini', 'GEMINI_API_KEY']
+  ]) {
+    if (!process.env[key]) providerErrors.push(`${name}: ${key} no está configurada.`);
   }
 
   for (const provider of providers) {
@@ -615,19 +628,24 @@ app.post('/api/v1/agente/consulta', async (req, res) => {
         } catch {
           detail = '';
         }
-        console.error(`Error ${provider.name}: HTTP ${response.status}${detail}`);
+        const errorMessage = redactProviderSecrets(`HTTP ${response.status}${detail}`);
+        providerErrors.push(`${provider.name}: ${errorMessage}`);
+        console.error(`Error ${provider.name}: ${errorMessage}`);
         continue;
       }
 
       const result = await response.json();
       const respuesta = provider.extract(result);
       if (!respuesta) {
-        console.error(`Error ${provider.name}: la API devolvió una respuesta vacía o con formato inesperado.`);
+        const errorMessage = 'la API devolvió una respuesta vacía o con formato inesperado.';
+        providerErrors.push(`${provider.name}: ${errorMessage}`);
+        console.error(`Error ${provider.name}: ${errorMessage}`);
         continue;
       }
       return res.json({ success: true, respuesta });
     } catch (error) {
-      const message = error.name === 'AbortError' ? 'tiempo de espera agotado' : error.message;
+      const message = redactProviderSecrets(error.name === 'AbortError' ? 'tiempo de espera agotado' : error.message);
+      providerErrors.push(`${provider.name}: ${message}`);
       console.error(`Error ${provider.name}: ${message}`);
     } finally {
       clearTimeout(timeoutId);
@@ -636,7 +654,8 @@ app.post('/api/v1/agente/consulta', async (req, res) => {
 
   return res.status(503).json({
     success: false,
-    message: 'El asistente está en mantenimiento, por favor intenta más tarde.'
+    message: 'El asistente está en mantenimiento, por favor intenta más tarde.',
+    details: providerErrors.join(' | ').slice(0, 900)
   });
 });
 
