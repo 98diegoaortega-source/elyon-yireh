@@ -811,8 +811,8 @@ async function askChatbot(question) {
       body: JSON.stringify({ pregunta: question })
     });
     addChatMessage(result.respuesta, 'assistant');
-  } catch (error) {
-    addChatMessage(error.message || 'No pude consultar el asistente. Intenta nuevamente.', 'assistant');
+  } catch {
+    addChatMessage('El asistente está en mantenimiento, por favor intenta más tarde.', 'assistant');
   }
 }
 

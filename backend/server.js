@@ -503,9 +503,6 @@ app.post('/api/v1/agente/consulta', async (req, res) => {
   if (!pregunta || pregunta.length > 500) {
     return res.status(400).json({ success: false, message: 'Escribe una pregunta de hasta 500 caracteres.' });
   }
-  if (!process.env.GEMINI_API_KEY) {
-    return res.status(503).json({ success: false, message: 'El asistente todavía no está configurado. Intenta más tarde.' });
-  }
 
   const contexto = {
     profesores: profesores.map(({ id, nombre, departamento }) => ({ id, nombre, departamento })),
@@ -530,51 +527,99 @@ app.post('/api/v1/agente/consulta', async (req, res) => {
     return res.json({ success: true, respuesta: 'Todavía no hay información académica cargada para consultar.' });
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000);
-  try {
-    const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
-      {
+  const instrucciones = 'Eres el asistente académico de Elyon Yireh. Responde en español, de forma breve y amable. Usa únicamente los datos JSON proporcionados; no inventes docentes, materias, horarios ni disponibilidad. Si la información no aparece en los datos, dilo claramente. Los datos pueden estar vacíos. Contexto académico actual: ' + JSON.stringify(contexto);
+  const openAiRequest = (url, apiKey, model, extraHeaders = {}) => ({
+    url,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+      ...extraHeaders
+    },
+    body: {
+      model,
+      messages: [
+        { role: 'system', content: instrucciones },
+        { role: 'user', content: pregunta }
+      ],
+      temperature: 0.2,
+      max_tokens: 512
+    },
+    extract: (result) => result.choices?.[0]?.message?.content?.trim()
+  });
+  const providers = [
+    process.env.GROQ_API_KEY && {
+      name: 'Groq',
+      ...openAiRequest(
+        'https://api.groq.com/openai/v1/chat/completions',
+        process.env.GROQ_API_KEY,
+        'openai/gpt-oss-120b'
+      )
+    },
+    process.env.OPENROUTER_API_KEY && {
+      name: 'OpenRouter',
+      ...openAiRequest(
+        'https://openrouter.ai/api/v1/chat/completions',
+        process.env.OPENROUTER_API_KEY,
+        'meta-llama/llama-3.3-70b-instruct:free',
+        {
+          'HTTP-Referer': 'https://elyon-yireh-app.vercel.app',
+          'X-Title': 'Elyon Yireh'
+        }
+      )
+    },
+    process.env.GEMINI_API_KEY && {
+      name: 'Gemini',
+      url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': process.env.GEMINI_API_KEY
+      },
+      body: {
+        systemInstruction: { parts: [{ text: instrucciones }] },
+        contents: [{ parts: [{ text: pregunta }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 512 }
+      },
+      extract: (result) => result.candidates?.[0]?.content?.parts
+        ?.map((part) => part.text || '')
+        .join('')
+        .trim()
+    }
+  ].filter(Boolean);
+
+  for (const provider of providers) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch(provider.url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': process.env.GEMINI_API_KEY
-        },
+        headers: provider.headers,
         signal: controller.signal,
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{
-              text: 'Eres el asistente académico de Elyon Yireh. Responde en español, de forma breve y amable. Usa únicamente los datos JSON proporcionados; no inventes docentes, materias, horarios ni disponibilidad. Si la información no aparece en los datos, dilo claramente. Los datos pueden estar vacíos. Contexto académico actual: ' + JSON.stringify(contexto)
-            }]
-          },
-          contents: [{ parts: [{ text: pregunta }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 512 }
-        })
+        body: JSON.stringify(provider.body)
+      });
+      if (!response.ok) {
+        console.warn(`${provider.name} no pudo responder; se probará el siguiente proveedor (HTTP ${response.status}).`);
+        continue;
       }
-    );
 
-    if (!response.ok) {
-      console.warn('Gemini rechazó la consulta académica:', response.status);
-      return res.status(502).json({ success: false, message: 'El asistente no pudo responder ahora. Intenta de nuevo más tarde.' });
+      const result = await response.json();
+      const respuesta = provider.extract(result);
+      if (!respuesta) {
+        console.warn(`${provider.name} devolvió una respuesta vacía; se probará el siguiente proveedor.`);
+        continue;
+      }
+      return res.json({ success: true, respuesta });
+    } catch (error) {
+      console.warn(`${provider.name} no disponible; se probará el siguiente proveedor:`,
+        error.name === 'AbortError' ? 'tiempo de espera agotado' : error.message);
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    const result = await response.json();
-    const respuesta = result.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text || '')
-      .join('')
-      .trim();
-    if (!respuesta) {
-      console.warn('Gemini devolvió una respuesta vacía.');
-      return res.status(502).json({ success: false, message: 'El asistente no devolvió una respuesta. Intenta de nuevo.' });
-    }
-    return res.json({ success: true, respuesta });
-  } catch (error) {
-    console.warn('No se pudo completar la consulta a Gemini:', error.name === 'AbortError' ? 'tiempo de espera agotado' : error.message);
-    return res.status(502).json({ success: false, message: 'No se pudo conectar con el asistente. Intenta de nuevo más tarde.' });
-  } finally {
-    clearTimeout(timeoutId);
   }
+
+  return res.status(503).json({
+    success: false,
+    message: 'El asistente está en mantenimiento, por favor intenta más tarde.'
+  });
 });
 
 app.post('/api/v1/chat', (req, res) => {

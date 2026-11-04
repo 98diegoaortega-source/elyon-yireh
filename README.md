@@ -78,7 +78,9 @@ En salones, el campo `ubicacion` se mantiene compatible con el campo existente `
 
 La importación administrativa acepta archivos Excel y CSV con columnas de programa, semestre, fecha, horaInicio, horaFin, materia, docente y salón. La ruta autenticada `POST /api/v1/admin/importar-horarios` crea docentes, salones y materias que no existan y guarda hasta 200 horarios por solicitud. La modalidad es opcional y toma `Presencial` como valor predeterminado.
 
-El asistente de consulta `POST /api/v1/agente/consulta` usa Gemini con información académica cargada desde el estado persistido. Para activarlo, crea una API key en [Google AI Studio](https://aistudio.google.com/app/apikey) y guárdala como `GEMINI_API_KEY` en las variables de entorno del servicio backend en Render. No pongas la clave en el frontend ni la compartas por chat. Después de guardarla, vuelve a desplegar el servicio.
+El asistente de consulta `POST /api/v1/agente/consulta` usa la información académica cargada desde el estado persistido y prueba proveedores en cascada: Groq (`GROQ_API_KEY`, primero), OpenRouter (`OPENROUTER_API_KEY`, segundo) y Google Gemini (`GEMINI_API_KEY`, último). Si una API key falta o un proveedor falla, prueba el siguiente; si todos fallan, muestra un mensaje de mantenimiento.
+
+Obtén las claves en [Groq Console](https://console.groq.com/keys), [OpenRouter](https://openrouter.ai/keys) y [Google AI Studio](https://aistudio.google.com/app/apikey). En Render, abre el servicio backend, ve a **Environment → Environment Variables** y agrega `GROQ_API_KEY`, `OPENROUTER_API_KEY` y `GEMINI_API_KEY` con sus claves. No pongas claves en el frontend ni las compartas por chat. Guarda los cambios y vuelve a desplegar el servicio. La disponibilidad y los límites gratuitos dependen de cada proveedor y pueden cambiar.
 
 ## Depuración
 
