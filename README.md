@@ -80,6 +80,8 @@ La importación administrativa acepta archivos Excel y CSV con columnas de progr
 
 El asistente de consulta `POST /api/v1/agente/consulta` usa la información académica cargada desde el estado persistido y prueba proveedores en cascada: Groq (`GROQ_API_KEY`, primero), OpenRouter (`OPENROUTER_API_KEY`, segundo) y Google Gemini (`GEMINI_API_KEY`, último). Si una API key falta o un proveedor falla, prueba el siguiente; si todos fallan, muestra un mensaje de mantenimiento.
 
+Los modelos configurados son `openai/gpt-oss-120b` en Groq, `nvidia/nemotron-3.5-lightning:free` en OpenRouter y `gemini-3.8-flash` en Gemini. Verifica los catálogos de cada proveedor antes de cambiarlos: los IDs antiguos pueden dejar de estar disponibles.
+
 Obtén las claves en [Groq Console](https://console.groq.com/keys), [OpenRouter](https://openrouter.ai/keys) y [Google AI Studio](https://aistudio.google.com/app/apikey). En Render, abre el servicio backend, ve a **Environment → Environment Variables** y agrega `GROQ_API_KEY`, `OPENROUTER_API_KEY` y `GEMINI_API_KEY` con sus claves. No pongas claves en el frontend ni las compartas por chat. Guarda los cambios y vuelve a desplegar el servicio. La disponibilidad y los límites gratuitos dependen de cada proveedor y pueden cambiar.
 
 ## Depuración
